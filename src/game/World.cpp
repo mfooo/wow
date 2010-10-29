@@ -737,6 +737,8 @@ void World::LoadConfigSettings(bool reload)
 
     setConfig(CONFIG_BOOL_KICK_PLAYER_ON_BAD_PACKET, "Network.KickOnBadPacket", false);
 
+    setConfig(CONFIG_BOOL_DUNGEON_FINDER_ENABLE, "Dungeon.Finder.Enable",true);
+
     if(int clientCacheId = sConfig.GetIntDefault("ClientCacheVersion", 0))
     {
         // overwrite DB/old value
@@ -1076,6 +1078,12 @@ void World::SetInitialWorldSettings()
     sLog.outString( ">>> Quests Relations loaded" );
     sLog.outString();
 
+    sLog.outString("Loading Dungeon boss data...");
+    sLFGMgr.LoadDungeonEncounters();
+
+    sLog.outString("Loading LFG rewards...");
+    sLFGMgr.LoadRewards();
+
     sLog.outString( "Loading UNIT_NPC_FLAG_SPELLCLICK Data..." );
     sObjectMgr.LoadNPCSpellClickSpells();
 
@@ -1084,6 +1092,9 @@ void World::SetInitialWorldSettings()
 
     sLog.outString( "Loading AreaTrigger definitions..." );
     sObjectMgr.LoadAreaTriggerTeleports();                      // must be after item template load
+
+    sLog.outString("Loading Access Requirements...");
+    sObjectMgr.LoadAccessRequirements();                        // must be after item template load
 
     sLog.outString( "Loading Quest Area Triggers..." );
     sObjectMgr.LoadQuestAreaTriggers();                         // must be after LoadQuests
@@ -1467,6 +1478,9 @@ void World::Update(uint32 diff)
         m_timers[WUPDATE_DELETECHARS].Reset();
         Player::DeleteOldCharacters();
     }
+
+    // Check if any group can be created by dungeon finder
+    sLFGMgr.Update(diff);
 
     // execute callbacks from sql queries that were queued recently
     UpdateResultQueue();

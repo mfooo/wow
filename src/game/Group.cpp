@@ -1912,3 +1912,12 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
         }
     }
 }
+// ADDED FOR DUGEONFINDER By Cyberium
+void Group::ConvertToLFG()
+{
+    m_groupType = GroupType(m_groupType | GROUPTYPE_LFD | GROUPTYPE_UNK1);
+    m_lootMethod = NEED_BEFORE_GREED;
+    if (!isBGGroup())
+        CharacterDatabase.PExecute("UPDATE groups SET groupType='%u' WHERE groupId='%u'", uint8(m_groupType), m_Id);
+    SendUpdate();
+}

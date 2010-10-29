@@ -2010,7 +2010,7 @@ void ObjectMgr::LoadItemPrototypes()
                 sLog.outErrorDb("Item (Entry: %u) has too large value in ContainerSlots (%u), replace by hardcoded limit (%u).",i,proto->ContainerSlots,MAX_BAG_SIZE);
                 const_cast<ItemPrototype*>(proto)->ContainerSlots = MAX_BAG_SIZE;
             }
-            
+
             if(proto->Flags & ITEM_FLAG_LOOTABLE)
             {
                 sLog.outErrorDb("Item container (Entry: %u) has not allowed for containers flag ITEM_FLAG_LOOTABLE (%u), flag removed.",i,ITEM_FLAG_LOOTABLE);
@@ -9303,6 +9303,101 @@ void ObjectMgr::RemoveArenaTeam( uint32 Id )
     mArenaTeamMap.erase(Id);
 }
 
+void ObjectMgr::LoadAccessRequirements()
+{
+    mAccessRequirements.clear();                                  // need for reload case
+
+    uint32 count = 0;
+
+    //                                                           0           1          2          3     4      5             6             7                      8                  9
+    QueryResult* result = WorldDatabase.Query("SELECT mapid, difficulty, level_min, level_max, item, item2, quest_done_A, quest_done_H, completed_achievement, quest_failed_text FROM access_requirement");
+    if (!result)
+    {
+
+        barGoLink bar(1);
+
+        bar.step();
+
+        sLog.outString();
+        sLog.outString(">> Loaded %u access requirement definitions", count);
+        return;
+    }
+    barGoLink bar(result->GetRowCount());
+
+    do
+    {
+        Field *fields = result->Fetch();
+
+        bar.step();
+
+        ++count;
+
+        uint32 mapid = fields[0].GetUInt32();
+        uint8 difficulty = fields[1].GetUInt8();
+        uint32 requirement_ID = MAKE_PAIR32(mapid,difficulty);
+        AccessRequirement ar;
+        ar.levelMin                 = fields[2].GetUInt8();
+        ar.levelMax                 = fields[3].GetUInt8();
+        ar.item                     = fields[4].GetUInt32();
+        ar.item2                    = fields[5].GetUInt32();
+        ar.quest_A                  = fields[6].GetUInt32();
+        ar.quest_H                  = fields[7].GetUInt32();
+        ar.achievement              = fields[8].GetUInt32();
+        ar.questFailedText          = fields[9].GetCppString();
+
+        if (ar.item)
+        {
+            ItemPrototype const *pProto = GetItemPrototype(ar.item);
+            if (!pProto)
+            {
+                sLog.outError("Key item %u does not exist for map %u difficulty %u, removing key requirement.", ar.item, mapid, difficulty);
+                ar.item = 0;
+            }
+        }
+
+        if (ar.item2)
+        {
+            ItemPrototype const *pProto = GetItemPrototype(ar.item2);
+            if (!pProto)
+            {
+                sLog.outError("Second item %u does not exist for map %u difficulty %u, removing key requirement.", ar.item2, mapid, difficulty);
+                ar.item2 = 0;
+            }
+        }
+
+        if (ar.quest_A)
+        {
+            if (!GetQuestTemplate(ar.quest_A))
+            {
+                sLog.outErrorDb("Required Alliance Quest %u not exist for map %u difficulty %u, remove quest done requirement.", ar.quest_A, mapid, difficulty);
+                ar.quest_A = 0;
+            }
+        }
+
+        if (ar.quest_H)
+        {
+            if (!GetQuestTemplate(ar.quest_H))
+            {
+                sLog.outErrorDb("Required Horde Quest %u not exist for map %u difficulty %u, remove quest done requirement.", ar.quest_H, mapid, difficulty);
+                ar.quest_H = 0;
+            }
+        }
+
+        if (ar.achievement)
+        {
+            if (!sAchievementStore.LookupEntry(ar.achievement))
+            {
+                sLog.outErrorDb("Required Achievement %u not exist for map %u difficulty %u, remove quest done requirement.", ar.achievement, mapid, difficulty);
+                ar.achievement = 0;
+            }
+        }
+        mAccessRequirements[requirement_ID] = ar;
+    } while (result->NextRow());
+
+    sLog.outString();
+    sLog.outString(">> Loaded %u access requirement definitions", count);
+}
+
 // Functions for scripting access
 uint32 GetAreaTriggerScriptId(uint32 trigger_id)
 {
@@ -9372,7 +9467,7 @@ bool FindCreatureData::operator()( CreatureDataPair const& dataPair )
         i_mapDist = new_dist;
     }
 
-    // skip not spawned (in any state), 
+    // skip not spawned (in any state),
     uint16 pool_id = sPoolMgr.IsPartOfAPool<Creature>(dataPair.first);
     if (pool_id && !sPoolMgr.IsSpawnedObject<Creature>(dataPair.first))
         return false;

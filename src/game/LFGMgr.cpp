@@ -351,26 +351,14 @@ void LFGMgr::Update(uint32 diff)
     Cleaner();
 
     // Check if a proposal can be formed with the new groups being added
-    LfgProposalList proposals;
+    LfgProposal* pProposal = NULL;
     LfgGuidList firstNew;
     while (!m_newToQueue.empty())
     {
-        sLog.outDebug("LFGMgr::Update: checking [" UI64FMTD "] m_newToQueue(%u), m_currentQueue(%u)", m_newToQueue.front(), uint32(m_newToQueue.size()), uint32(m_currentQueue.size()));
-
         firstNew.push_back(m_newToQueue.front());
-
-        if (ObjectGuid(firstNew.front()).IsGroup())
-            CheckCompatibility(firstNew, &proposals);       // Check if the group itself match
-
-        if (!proposals.size())
-            FindNewGroups(firstNew, m_currentQueue, &proposals);
-
-        if (proposals.size())                               // Group found!
+        pProposal = FindNewGroups(firstNew, m_currentQueue);
+        if (pProposal)                                       // Group found!
         {
-            sLog.outDebug("LFGMgr::Update: Found %u size proposals for [" UI64FMTD "]", uint32(m_newToQueue.front()), firstNew.front());
-            LfgProposal* pProposal = (*proposals.begin());
-            // TODO: Create algorithm to select better group based on GS (uses to be good tank with bad healer and viceversa)
-
             // Remove groups in the proposal from new and current queues (not from queue map)
             for (LfgGuidList::const_iterator it = pProposal->queues.begin(); it != pProposal->queues.end(); ++it)
             {
@@ -396,23 +384,10 @@ void LFGMgr::Update(uint32 diff)
 
             if (pProposal->state == LFG_PROPOSAL_SUCCESS)
                 UpdateProposal(m_lfgProposalId, lowGuid, true);
-
-            // Clean up
-            for (LfgProposalList::iterator it = proposals.begin(); it != proposals.end(); ++it)
-            {
-                if ((*it) == pProposal)                     // Do not remove the selected proposal;
-                    continue;
-                (*it)->queues.clear();
-                for (LfgProposalPlayerMap::iterator itPlayers = (*it)->players.begin(); itPlayers != (*it)->players.end(); ++itPlayers)
-                    delete itPlayers->second;
-                (*it)->players.clear();
-                delete (*it);
-            }
-            proposals.clear();
         }
         else
         {
-            m_currentQueue.push_back(m_newToQueue.front()); // Group not found, add this group to the queue.
+            m_currentQueue.push_back(m_newToQueue.front());  // Group not found, add this group to the queue.
             m_newToQueue.pop_front();
         }
         firstNew.clear();
@@ -795,45 +770,23 @@ void LFGMgr::OfferContinue(Group* grp)
 /// </summary>
 /// <param name="LfgGuidList &">Guids we trying to match with the rest of groups</param>
 /// <param name="LfgGuidList">All guids in queue</param>
-/// <param name="LfgProposalList*">Proposals found.</param>
-void LFGMgr::FindNewGroups(LfgGuidList& check, LfgGuidList all, LfgProposalList* proposals)
+/// <returns>LfgProposal*</returns>
+LfgProposal* LFGMgr::FindNewGroups(LfgGuidList check, LfgGuidList all)
 {
-    MANGOS_ASSERT(proposals);
-    if (!check.size() || check.size() > MAX_GROUP_SIZE)
-        return;
-
-    if (check.size() == 1)                                  // Consistency check
-    {
-        uint64 guid = (*check.begin());
-        LfgQueueInfoMap::iterator itQueue = m_QueueInfoMap.find(guid);
-        if (itQueue == m_QueueInfoMap.end())
-        {
-            sLog.outError("LFGMgr::FindNewGroups: [" UI64FMTD "] is not queued but listed as queued!", guid);
-            RemoveFromQueue(ObjectGuid(guid));
-            return;
-        }
-    }
-
     sLog.outDebug("LFGMgr::FindNewGroup: (%s) - all(%s)", ConcatenateGuids(check).c_str(), ConcatenateGuids(all).c_str());
 
-    // Check individual compatibilities
-    LfgGuidList compatibles;
-    for (LfgGuidList::iterator it = all.begin(); it != all.end(); ++it)
+    LfgProposal* pProposal = NULL;
+    if (!check.size() || check.size() > MAX_GROUP_SIZE || !CheckCompatibility(check, pProposal))
+        return NULL;
+    // Try to match with queued groups
+    while (!pProposal && all.size() > 0)
     {
-        check.push_back(*it);
-        if (CheckCompatibility(check, proposals))
-            compatibles.push_back(*it);
+        check.push_back(all.front());
+        all.pop_front();
+        pProposal = FindNewGroups(check, all);
         check.pop_back();
     }
-
-    // Check multiple groups
-    while (compatibles.size() > 1)
-    {
-        check.push_back(compatibles.front());
-        compatibles.pop_front();
-        FindNewGroups(check, compatibles, proposals);
-        check.pop_back();
-    }
+    return pProposal;
 }
 
 /// <summary>
@@ -841,9 +794,11 @@ void LFGMgr::FindNewGroups(LfgGuidList& check, LfgGuidList all, LfgProposalList*
 /// </summary>
 /// <param name="LfgGuidList">Guids we checking compatibility</param>
 /// <returns>bool</returns>
-/// <param name="LfgProposalList*">Proposals found.</param>
-bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposalList* proposals)
+/// <param name="LfgProposalList*&">Proposals found.</param>
+bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposal*& pProposal)
 {
+    if (pProposal)                                  // Do not check anything if we already have a proposal
+        return false;
     std::string strGuids = ConcatenateGuids(check);
 
     if (check.size() > MAX_GROUP_SIZE || !check.size())
@@ -852,7 +807,34 @@ bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposalList* proposals)
         return false;
     }
 
-    // No previous check have been done, do it now
+    if (check.size() == 1 && IS_PLAYER_GUID(check.front())) // Player joining dungeon... compatible
+        return true;
+
+    // Previously cached?
+    LfgAnswer answer = GetCompatibles(strGuids);
+    if (answer != LFG_ANSWER_PENDING)
+    {
+        sLog.outDebug("LFGMgr::CheckCompatibility: (%s) compatibles (cached): %d", strGuids.c_str(), answer);
+        return bool(answer);
+    }
+    
+    // Check all but new compatiblitity
+    if (check.size() > 2)
+    {
+        uint64 frontGuid = check.front();
+        check.pop_front();
+
+        // Check all-but-new compatibilities (New,A,B,C,D) --> check(A,B,C,D)
+        if (!CheckCompatibility(check, pProposal))          // Group not compatible
+        {
+            sLog.outDebug("LFGMgr::CheckCompatibility: (%s) not compatibles (%s not compatibles)", strGuids.c_str(), ConcatenateGuids(check).c_str());
+            SetCompatibles(strGuids, false);
+            return false;
+        }
+        check.push_front(frontGuid);
+        // all-but-new compatibles, now check with new
+    }
+
     uint8 numPlayers = 0;
     uint8 numLfgGroups = 0;
     ObjectGuid groupGuid;
@@ -881,38 +863,10 @@ bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposalList* proposals)
                 }
         }
     }
-
-    if (check.size() == 1 && numPlayers != MAX_GROUP_SIZE) // Single group with less than MAXGROUPSIZE - Compatibles
-        return true;
-
-    if (check.size() > 1)
+    if (check.size() == 1)
     {
-        // Previously cached?
-        LfgAnswer answer = GetCompatibles(strGuids);
-        if (answer != LFG_ANSWER_PENDING)
-        {
-            if (numPlayers != MAX_GROUP_SIZE || answer == LFG_ANSWER_DENY)
-            {
-                sLog.outDebug("LFGMgr::CheckCompatibility: (%s) compatibles (cached): %d", strGuids.c_str(), answer);
-                return bool(answer);
-            }
-            // MAXGROUPSIZE + LFG_ANSWER_AGREE = Match - we don't have it cached so do calcs again
-        }
-        else if (check.size() > 2)
-        {
-            uint64 frontGuid = check.front();
-            check.pop_front();
-
-            // Check all-but-new compatibilities (New,A,B,C,D) --> check(A,B,C,D)
-            if (!CheckCompatibility(check, proposals))      // Group not compatible
-            {
-                sLog.outDebug("LFGMgr::CheckCompatibility: (%s) no compatibles (%s not compatibles)", strGuids.c_str(), ConcatenateGuids(check).c_str());
-                SetCompatibles(strGuids, false);
-                return false;
-            }
-            check.push_front(frontGuid);
-            // all-but-new compatibles, now check with new
-        }
+        if (numPlayers != MAX_GROUP_SIZE)                      // Single group with less than MAXGROUPSIZE - Compatibles
+            return true;
     }
 
     // Do not match - groups already in a lfgDungeon or too much players
@@ -1044,8 +998,13 @@ bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposalList* proposals)
         return true;
     }
     sLog.outDebug("LFGMgr::CheckCompatibility: (%s) MATCH! Group formed", strGuids.c_str());
+    // GROUP FORMED!
+    // TODO - Improve algorithm to select proper group based on Item Level
+    // Do not match bad tank and bad healer on same group
 
     // Select a random dungeon from the compatible list
+    // TODO - Select the dungeon based on group item Level, not just random
+
     LfgDungeonSet::iterator itDungeon = compatibleDungeons->begin();
     uint32 selectedDungeon = urand(0, compatibleDungeons->size() - 1);
     while (selectedDungeon > 0)
@@ -1058,7 +1017,7 @@ bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposalList* proposals)
     delete compatibleDungeons;
 
     // Create a new proposal
-    LfgProposal* pProposal = new LfgProposal(selectedDungeon);
+    pProposal = new LfgProposal(selectedDungeon);
     pProposal->cancelTime = time_t(time(NULL)) + LFG_TIME_PROPOSAL;
     pProposal->queues = check;
     //pProposal->groupLowGuid = groupLowGuid;
@@ -1096,10 +1055,6 @@ bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposalList* proposals)
     }
     if (numAccept == MAX_GROUP_SIZE)
         pProposal->state = LFG_PROPOSAL_SUCCESS;
-
-    if (!proposals)
-        proposals = new LfgProposalList();
-    proposals->push_back(pProposal);
 
     rolesMap.clear();
     players.clear();

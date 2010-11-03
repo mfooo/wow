@@ -1617,7 +1617,7 @@ void LFGMgr::UpdateProposal(uint32 proposalId, uint32 lowGuid, bool accept)
         grp->SetDungeonDifficulty(Difficulty(dungeon->difficulty));
         grp->SetLfgDungeonEntry(dungeon->Entry());
         grp->SetLfgStatus(LFG_STATUS_NOT_SAVED);
-        grp->SendUpdate();
+        grp->SendUpdate();grp->SendUpdate(); // Send two time seem to resolve "unknow" charname
 
         // Remove players/groups from Queue
         for (LfgGuidList::const_iterator it = pProposal->queues.begin(); it != pProposal->queues.end(); ++it)

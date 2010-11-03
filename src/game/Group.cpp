@@ -308,6 +308,9 @@ Player* Group::GetInvited(const std::string& name) const
 
 bool Group::AddMember(ObjectGuid guid, const char* name)
 {
+    if (isLfgQueued())
+        sLFGMgr.Leave(NULL, this);
+
     if (!_addMember(guid, name))
         return false;
 
@@ -315,6 +318,8 @@ bool Group::AddMember(ObjectGuid guid, const char* name)
 
     if (Player *player = sObjectMgr.GetPlayer(guid))
     {
+        if (player->isUsingLfg())
+            sLFGMgr.Leave(player);
         if (!IsLeader(player->GetObjectGuid()) && !isBGGroup())
         {
             // reset the new member's instances, unless he is currently in one of them
@@ -347,10 +352,15 @@ bool Group::AddMember(ObjectGuid guid, const char* name)
     return true;
 }
 
-uint32 Group::RemoveMember(ObjectGuid guid, uint8 method)
+uint32 Group::RemoveMember(ObjectGuid guid, RemoveMethod method)
 {
+    if (isLfgQueued())
+        sLFGMgr.Leave(NULL, this);
+    else if (isLFGGroup() && !isLfgDungeonComplete())
+        sLFGMgr.OfferContinue(this);
+
     // remove member and change leader (if need) only if strong more 2 members _before_ member remove
-    if (GetMembersCount() > uint32(isBGGroup() ? 1 : 2))    // in BG group case allow 1 members group
+    if (GetMembersCount() > ((isBGGroup() || isLFGGroup()) ? 1u : 2u))    // in BG or LFG group case allow 1 members group
     {
         bool leaderChanged = _removeMember(guid);
 
@@ -362,12 +372,15 @@ uint32 Group::RemoveMember(ObjectGuid guid, uint8 method)
 
             WorldPacket data;
 
-            if (method == 1)
+            if (method == GROUP_REMOVEMETHOD_KICK)
             {
                 data.Initialize( SMSG_GROUP_UNINVITE, 0 );
                 player->GetSession()->SendPacket( &data );
             }
-
+            
+            player->GetSession()->SendLfgUpdateParty(LFG_UPDATETYPE_LEADER);
+            if (isLFGGroup() && player->GetMap()->IsDungeon())
+                 player->TeleportToBGEntryPoint();
             //we already removed player from group and in player->GetGroup() is his original group!
             if (Group* group = player->GetGroup())
             {
@@ -435,6 +448,10 @@ void Group::Disband(bool hideDestroy)
                 player->SetOriginalGroup(NULL);
             else
                 player->SetGroup(NULL);
+            if (isLFGGroup() && player->GetMap()->IsDungeon())
+                player->TeleportToBGEntryPoint();
+            player->GetSession()->SendLfgUpdateParty(LFG_UPDATETYPE_GROUP_DISBAND);
+            player->GetSession()->SendLfgUpdateParty(LFG_UPDATETYPE_LEADER);
         }
 
         // quest related GO state dependent from raid membership
@@ -1030,11 +1047,11 @@ void Group::SendUpdate()
         data << uint8(m_groupType);                         // group type (flags in 3.3)
         data << uint8(citr->group);                         // groupid
         data << uint8(GetFlags(*citr));                     // group flags
-        data << uint8(isBGGroup() ? 1 : 0);                 // 2.0.x, isBattleGroundGroup?
-        if(m_groupType & GROUPTYPE_LFD)
+        data << uint8(citr->roles);                         // Roles
+        if(isLFGGroup())
         {
-            data << uint8(0);
-            data << uint32(0);
+            data << uint8(m_LfgStatus);
+            data << uint32(m_LfgDungeonEntry);
         }
         data << uint64(0x50000000FFFFFFFELL);               // related to voice chat?
         data << uint32(0);                                  // 3.3, this value increments every time SMSG_GROUP_LIST is sent
@@ -1217,6 +1234,7 @@ bool Group::_removeMember(ObjectGuid guid)
                 player->SetOriginalGroup(NULL);
             else
                 player->SetGroup(NULL);
+            player->GetSession()->SendLfgUpdateParty(LFG_UPDATETYPE_LEADER);
         }
     }
 

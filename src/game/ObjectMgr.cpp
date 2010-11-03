@@ -3431,8 +3431,8 @@ void ObjectMgr::LoadGroups()
 
     // -- loading members --
     count = 0;
-    //                                       0           1          2         3
-    result = CharacterDatabase.Query("SELECT memberGuid, assistant, subgroup, groupId FROM group_member ORDER BY groupId");
+    //                                       0           1          2         3      4
+    result = CharacterDatabase.Query("SELECT memberGuid, assistant, subgroup, roles, groupId FROM group_member ORDER BY groupId");
     if (!result)
     {
         barGoLink bar2( 1 );
@@ -3453,7 +3453,8 @@ void ObjectMgr::LoadGroups()
             ObjectGuid memberGuid = ObjectGuid(HIGHGUID_PLAYER, memberGuidlow);
             bool   assistent     = fields[1].GetBool();
             uint8  subgroup      = fields[2].GetUInt8();
-            uint32 groupId       = fields[3].GetUInt32();
+            uint8  roles         = fields[3].GetUInt8();
+            uint32 groupId       = fields[4].GetUInt32();
             if (!group || group->GetId() != groupId)
             {
                 group = GetGroupById(groupId);
@@ -3466,7 +3467,7 @@ void ObjectMgr::LoadGroups()
                 }
             }
 
-            if (!group->LoadMemberFromDB(memberGuidlow, subgroup, assistent))
+            if (!group->LoadMemberFromDB(memberGuidlow, subgroup, roles, assistent))
             {
                 sLog.outErrorDb("Incorrect entry in group_member table : member %s cannot be added to group (Id: %u)!",
                     memberGuid.GetString().c_str(), groupId);

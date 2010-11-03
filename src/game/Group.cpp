@@ -33,6 +33,7 @@
 #include "MapInstanced.h"
 #include "Util.h"
 #include "LootMgr.h"
+#include "LFGMgr.h"
 
 #define LOOT_ROLL_TIMEOUT  (1*MINUTE*IN_MILLISECONDS)
 
@@ -206,7 +207,7 @@ bool Group::LoadGroupFromDB(Field* fields)
     return true;
 }
 
-bool Group::LoadMemberFromDB(uint32 guidLow, uint8 subgroup, bool assistant)
+bool Group::LoadMemberFromDB(uint32 guidLow, uint8 subgroup,uint8 roles, bool assistant)
 {
     MemberSlot member;
     member.guid      = ObjectGuid(HIGHGUID_PLAYER, guidLow);
@@ -216,6 +217,7 @@ bool Group::LoadMemberFromDB(uint32 guidLow, uint8 subgroup, bool assistant)
         return false;
 
     member.group     = subgroup;
+    member.roles     = roles;
     member.assistant = assistant;
     m_memberSlots.push_back(member);
 
@@ -1160,6 +1162,7 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint
     member.guid      = guid;
     member.name      = name;
     member.group     = group;
+    member.roles     = 0;
     member.assistant = isAssistant;
     m_memberSlots.push_back(member);
 
@@ -1192,8 +1195,8 @@ bool Group::_addMember(ObjectGuid guid, const char* name, bool isAssistant, uint
     if(!isBGGroup())
     {
         // insert into group table
-        CharacterDatabase.PExecute("INSERT INTO group_member(groupId,memberGuid,assistant,subgroup) VALUES('%u','%u','%u','%u')",
-            m_Id, member.guid.GetCounter(), ((member.assistant==1)?1:0), member.group);
+        CharacterDatabase.PExecute("INSERT INTO group_member(groupId,memberGuid,assistant,subgroup,roles) VALUES('%u','%u','%u','%u','%u')",
+            m_Id, member.guid.GetCounter(), ((member.assistant==1)?1:0), member.group, member.roles);
     }
 
     return true;

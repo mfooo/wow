@@ -222,7 +222,7 @@ class MANGOS_DLL_SPEC Group
         // group manipulation methods
         bool   Create(ObjectGuid guid, const char * name);
         bool   LoadGroupFromDB(Field *fields);
-        bool   LoadMemberFromDB(uint32 guidLow, uint8 subgroup, bool assistant);
+        bool   LoadMemberFromDB(uint32 guidLow, uint8 subgroup, uint8 roles, bool assistant);
         bool   AddInvite(Player *player);
         uint32 RemoveInvite(Player *player);
         void   RemoveAllInvites();

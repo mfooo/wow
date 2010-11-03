@@ -1243,7 +1243,7 @@ void LFGMgr::RemoveFromCompatibles(ObjectGuid guid)
     std::string strGuid = ConcatenateGuids(lista);
     lista.clear();
 
-    sLog.outDebug("LFGMgr::RemoveFromCompatibles: Removing [" UI64FMTD "], %s", guid, strGuid.c_str());
+    sLog.outDebug("LFGMgr::RemoveFromCompatibles: Removing [" UI64FMTD "], %s", guid.GetRawValue(), strGuid.c_str());
     LfgCompatibleMap::iterator it;
     for (LfgCompatibleMap::iterator itNext = m_CompatibleMap.begin(); itNext != m_CompatibleMap.end();)
     {

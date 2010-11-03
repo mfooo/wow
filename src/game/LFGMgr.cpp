@@ -27,6 +27,9 @@
 
 #include "Group.h"
 #include "Player.h"
+#include "Policies/SingletonImp.h"
+
+INSTANTIATE_SINGLETON_1( LFGMgr );
 
 // --- Temporal functions
 // Added to try to find bugs that leaves data inconsistent
@@ -1921,6 +1924,12 @@ void LFGMgr::TeleportPlayer(Player* plr, bool out, bool fromOpcode /*= false*/)
 
 void LFGMgr::RewardDungeonDoneFor(const uint32 dungeonId, Player* player)
 {
+    if (!player)
+    {
+        sLog.outString("Error in RewardDungeonDoneFor(dungeonId=%u, player=NULL)",dungeonId);
+        return;
+    }
+    sLog.outString("IN RewardDungeonDoneFor(dungeonId=%u, player=%s)",dungeonId,player->GetName());
     Group* group = player->GetGroup();
     if ((!group || !group->isLFGGroup()) || !sWorld.getConfig(CONFIG_BOOL_DUNGEON_FINDER_ENABLE))
         return;
@@ -2261,8 +2270,11 @@ uint32 LFGMgr::GetDungeonIdForAchievement(uint32 achievementId)
 {
     std::map<uint32, uint32>::iterator itr = m_EncountersByAchievement.find(achievementId);
     if (itr != m_EncountersByAchievement.end())
+    {
+        //sLog.outString("LFGMgr::GetDungeonIdForAchievement(%u) returned '%u' with m_EncountersAchievement size = %u",achievementId, itr->second, m_EncountersByAchievement.size());
         return itr->second;
-
+    }
+    //sLog.outString("LFGMgr::GetDungeonIdForAchievement(%u) returned '0' with m_EncountersAchievement size = %u",achievementId, m_EncountersByAchievement.size());
     return 0;
 };
 

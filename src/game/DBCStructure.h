@@ -481,12 +481,18 @@ struct AchievementCriteriaEntry
 
         struct
         {
+            uint32  unused;
+            uint32  dungeonsComplete;
+        } use_lfg;
+
+        struct
+        {
             uint32  value;                                  // 3 main requirement
             uint32  count;                                  // 4 main requirement count
             uint32  additionalRequirement1_type;            // 5 additional requirement 1 type
             uint32  additionalRequirement1_value;           // 6 additional requirement 1 value
-            uint32  additionalRequirement2_type;            // 7 additional requirement 2 type
-            uint32  additionalRequirement2_value;           // 8 additional requirement 1 value
+        //    uint32  additionalRequirement2_type;            // 7 additional requirement 2 type
+        //    uint32  additionalRequirement2_value;           // 8 additional requirement 1 value
         } raw;
     };
     char*  name[16];                                        // 9-24

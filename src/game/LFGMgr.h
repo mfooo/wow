@@ -321,5 +321,5 @@ class LFGMgr
         bool m_update;
 };
 
-#define sLFGMgr (*ACE_Singleton<LFGMgr, ACE_Null_Mutex>::instance())
+#define sLFGMgr MaNGOS::Singleton<LFGMgr>::Instance()
 #endif

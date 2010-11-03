@@ -692,7 +692,8 @@ void LFGMgr::Leave(Player* plr, Group* grp /* = NULL*/)
         return;
 
     ObjectGuid guid = plr->GetObjectGuid();
-    sLog.outDebug("LFGMgr::Leave: %u", guid.GetCounter());
+    
+    sLog.outDebug("LFGMgr::Leave: %s", plr->GetName());
 
     // Remove from Role Checks
     if (grp)
@@ -1075,13 +1076,13 @@ void LFGMgr::UpdateRoleCheck(Group* grp, Player* plr /* = NULL*/)
     LfgRoleCheck* pRoleCheck = NULL;
     LfgRolesMap check_roles;
     LfgRoleCheckMap::iterator itRoleCheck = m_RoleChecks.find(rolecheckId);
-    LfgDungeonSet* dungeons = plr->GetLfgDungeons();
     bool newRoleCheck = itRoleCheck == m_RoleChecks.end();
     if (newRoleCheck)
     {
-        if (grp->GetLeaderGuid().GetCounter()!= plr->GetObjectGuid().GetCounter())
+        if (!plr || grp->GetLeaderGuid().GetCounter()!= plr->GetObjectGuid().GetCounter())
             return;
 
+        LfgDungeonSet* dungeons = plr->GetLfgDungeons();
         pRoleCheck = new LfgRoleCheck();
         pRoleCheck->cancelTime = time_t(time(NULL)) + LFG_TIME_ROLECHECK;
         pRoleCheck->result = LFG_ROLECHECK_INITIALITING;

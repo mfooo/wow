@@ -1024,7 +1024,7 @@ bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposal*& pProposal)
     pProposal = new LfgProposal(selectedDungeon);
     pProposal->cancelTime = time_t(time(NULL)) + LFG_TIME_PROPOSAL;
     pProposal->queues = check;
-    //pProposal->groupLowGuid = groupLowGuid;
+    pProposal->groupId = groupGuid.GetCounter();
 
     // Assign new roles to players and assign new leader
     LfgProposalPlayer* ppPlayer;
@@ -1035,7 +1035,7 @@ bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposal*& pProposal)
         uint8 pos = urand(0, players.size() - 1);
         for (uint8 i = 0; i < pos; ++i)
             ++itPlayers;
-        newLeaderLowGuid = (*itPlayers)->GetGUIDLow();
+        newLeaderLowGuid = (*itPlayers)->GetObjectGuid().GetCounter();
     }
     pProposal->leaderLowGuid = newLeaderLowGuid;
 
@@ -1580,7 +1580,7 @@ void LFGMgr::UpdateProposal(uint32 proposalId, uint32 lowGuid, bool accept)
 
         // Remove players/groups from Queue
         for (LfgGuidList::const_iterator it = pProposal->queues.begin(); it != pProposal->queues.end(); ++it)
-            RemoveFromQueue(plr->GetObjectGuid());
+            RemoveFromQueue(ObjectGuid(*it));
 
         // Teleport Player
         for (LfgPlayerList::const_iterator it = players.begin(); it != players.end(); ++it)

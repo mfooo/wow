@@ -101,6 +101,7 @@ void LFGMgr::Cleaner()
 LFGMgr::LFGMgr()
 {
     m_QueueTimer = 0;
+	m_TeleportTimer = 0;
     m_WaitTimeAvg = -1;
     m_WaitTimeTank = -1;
     m_WaitTimeHealer = -1;
@@ -443,7 +444,26 @@ void LFGMgr::Update(uint32 diff)
         }
     }
     else
+	{
         m_QueueTimer += diff;
+		if (m_TeleportTimer > 100)
+		{
+			m_TeleportTimer=0;
+			if (!PlayerToTeleport.empty())
+			{
+				Player *plr = PlayerToTeleport.back();
+				if (plr)
+				{
+					TeleportPlayer(plr,false);
+				}
+				else
+					sLog.outString("LFGMgr::Update > LAYER NOT TELEPORTED Pointer null !!!!!!!!!!!!!!!!!!!");
+				PlayerToTeleport.pop_back();
+			}
+		}
+		else
+			m_TeleportTimer+=diff;
+	}
     m_update = true;
 }
 
@@ -1568,6 +1588,7 @@ void LFGMgr::UpdateProposal(uint32 proposalId, uint32 lowGuid, bool accept)
                 m_WaitTimeDps = int32((m_WaitTimeDps * m_NumWaitTimeDps + waitTimesMap[plr->GetGUID()]) / ++m_NumWaitTimeDps);
 
             grp->SetLfgRoles(plr->GetObjectGuid(), pProposal->players[plr->GetObjectGuid().GetCounter()]->role);
+			//grp->SendUpdate();
         }
 
         // Set the dungeon difficulty
@@ -1583,8 +1604,10 @@ void LFGMgr::UpdateProposal(uint32 proposalId, uint32 lowGuid, bool accept)
             RemoveFromQueue(ObjectGuid(*it));
 
         // Teleport Player
+		m_TeleportTimer=0;
         for (LfgPlayerList::const_iterator it = players.begin(); it != players.end(); ++it)
-            TeleportPlayer(*it, false);
+			PlayerToTeleport.push_back(*it);
+            //TeleportPlayer(*it, false);
 
         // Update group info
         grp->SendUpdate();

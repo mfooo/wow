@@ -320,6 +320,8 @@ class LFGMgr
         uint32 m_NumWaitTimeHealer;
         uint32 m_NumWaitTimeDps;
         bool m_update;
+        uint32 m_TeleportTimer;
+		LfgPlayerList PlayerToTeleport;
 };
 
 #define sLFGMgr MaNGOS::Singleton<LFGMgr>::Instance()

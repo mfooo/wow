@@ -308,8 +308,8 @@ Player* Group::GetInvited(const std::string& name) const
 
 bool Group::AddMember(ObjectGuid guid, const char* name)
 {
-    if (isLfgQueued())
-        sLFGMgr.Leave(NULL, this);
+//    if (isLfgQueued())
+//        sLFGMgr.Leave(NULL, this);
 
     if (!_addMember(guid, name))
         return false;

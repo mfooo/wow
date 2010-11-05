@@ -242,10 +242,24 @@ typedef std::list<Player*> LfgPlayerList;
 typedef std::set<uint64> LfgGuidSet;
 typedef std::map<std::string, LfgAnswer> LfgCompatibleMap;
 
+struct sLfgStatus
+{
+    uint32 Tanks;
+    uint32 Healers;
+    uint32 DPS;
+    sLfgStatus()
+    {
+        Tanks=0;
+        Healers=0;
+        DPS=0;
+    }
+};
+
+typedef std::map<uint32, sLfgStatus> tLfgStatus;
 
 class LFGMgr
 {
-    friend class ACE_Singleton<LFGMgr, ACE_Null_Mutex>;
+    //friend class ACE_Singleton<LFGMgr, ACE_Null_Mutex>;
     public:
         LFGMgr();
         ~LFGMgr();
@@ -322,6 +336,7 @@ class LFGMgr
         bool m_update;
         uint32 m_TeleportTimer;
 		LfgPlayerList PlayerToTeleport;
+        tLfgStatus m_LfgStatus;
 };
 
 #define sLFGMgr MaNGOS::Singleton<LFGMgr>::Instance()

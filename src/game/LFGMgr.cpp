@@ -406,6 +406,44 @@ void LFGMgr::Update(uint32 diff)
         uint32 dungeonId;
         uint32 queuedTime;
         uint8 role;
+		Player *plr;
+        m_LfgStatus.clear();
+        // next loop is here only for proof of concept, if it work the best is to update this only when change occur to queue.
+        for (LfgQueueInfoMap::const_iterator itQueue = m_QueueInfoMap.begin(); itQueue != m_QueueInfoMap.end(); ++itQueue)
+        {
+            queue = itQueue->second;
+            if (!queue)
+            {
+                sLog.outError("LFGMgr::Update: [" UI64FMTD "] queued with null queue info!", itQueue->first);
+                continue;
+            }
+            for (LfgDungeonSet::const_iterator itdungeon = queue->dungeons.begin(); itdungeon != queue->dungeons.end(); ++itdungeon)
+            {
+                dungeonId = (*itdungeon);
+				plr = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, itQueue->first));
+				if (plr)
+					role=plr->GetLfgRoles();
+				else
+					continue;
+				if (role & ROLE_TANK)
+				{
+                    ++m_LfgStatus[dungeonId].Tanks;
+					continue;
+				}
+
+				if (role & ROLE_HEALER)
+				{
+                    ++m_LfgStatus[dungeonId].Healers;
+					continue;
+				}
+
+                if (role & ROLE_DAMAGE)
+				{
+                    ++m_LfgStatus[dungeonId].DPS;
+				}
+             }
+
+        }
         for (LfgQueueInfoMap::const_iterator itQueue = m_QueueInfoMap.begin(); itQueue != m_QueueInfoMap.end(); ++itQueue)
         {
             queue = itQueue->second;
@@ -418,7 +456,7 @@ void LFGMgr::Update(uint32 diff)
             queuedTime = uint32(currTime - queue->joinTime);
             role = ROLE_NONE;
             for (LfgRolesMap::const_iterator itPlayer = queue->roles.begin(); itPlayer != queue->roles.end(); ++itPlayer)
-                role |= itPlayer->second;
+                 role |= itPlayer->second;
 
             waitTime = -1;
             if (role & ROLE_TANK)
@@ -437,10 +475,9 @@ void LFGMgr::Update(uint32 diff)
             }
             else if (role & ROLE_DAMAGE)
                 waitTime = m_WaitTimeDps;
-
             for (LfgRolesMap::const_iterator itPlayer = queue->roles.begin(); itPlayer != queue->roles.end(); ++itPlayer)
                 if (Player* plr = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, itPlayer->first)))
-                    plr->GetSession()->SendLfgQueueStatus(dungeonId, waitTime, m_WaitTimeAvg, m_WaitTimeTank, m_WaitTimeHealer, m_WaitTimeDps, queuedTime, queue->tanks, queue->healers, queue->dps);
+					plr->GetSession()->SendLfgQueueStatus(dungeonId, waitTime, m_WaitTimeAvg, m_WaitTimeTank, m_WaitTimeHealer, m_WaitTimeDps, queuedTime, (m_LfgStatus[dungeonId].Tanks>0)? 0 : 1, (m_LfgStatus[dungeonId].Healers>0)? 0 : 1, (m_LfgStatus[dungeonId].DPS>2)? 0 : (3-m_LfgStatus[dungeonId].DPS));
         }
     }
     else

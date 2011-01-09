@@ -394,7 +394,11 @@ Spell::Spell( Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid o
     // determine reflection
     m_canReflect = false;
 
-    if(m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MAGIC && !(m_spellInfo->AttributesEx2 & SPELL_ATTR_EX2_CANT_REFLECTED))
+    // AoE spells, spells with non-magic DmgClass or SchoolMask or with SPELL_ATTR_EX2_CANT_REFLECTED cannot be reflected
+    if (m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MAGIC &&
+        m_spellInfo->SchoolMask != SPELL_SCHOOL_MASK_NORMAL &&
+        !(m_spellInfo->AttributesEx2 & SPELL_ATTR_EX2_CANT_REFLECTED) &&
+        !IsAreaOfEffectSpell(m_spellInfo))
     {
         for(int j = 0; j < MAX_EFFECT_INDEX; ++j)
         {
@@ -1020,16 +1024,19 @@ void Spell::AddItemTarget(Item* pitem, SpellEffectIndex effIndex)
 
 void Spell::DoAllEffectOnTarget(TargetInfo *target)
 {
-    if (target->processed)                                  // Check target
+    if (m_spellInfo->Id <= 0 || m_spellInfo->Id > MAX_SPELL_ID ||  m_spellInfo->Id == 32 || m_spellInfo->Id == 80)
         return;
-    target->processed = true;                               // Target checked in apply effects procedure
-
-    // Get mask of effects for target
-    uint32 mask = target->effectMask;
+    if (!target || target == (TargetInfo*)0x10 || target->processed)
+        return;
 
     Unit* unit = m_caster->GetObjectGuid() == target->targetGUID ? m_caster : ObjectAccessor::GetUnit(*m_caster, target->targetGUID);
     if (!unit)
         return;
+		
+    target->processed = true;                               // Target checked in apply effects procedure
+
+    // Get mask of effects for target
+    uint32 mask = target->effectMask;
 
     // Get original caster (if exist) and calculate damage/healing from him data
     Unit *real_caster = GetAffectiveCaster();
@@ -1266,7 +1273,8 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
             }
 
             // not break stealth by cast targeting
-            if (!(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NOT_BREAK_STEALTH) && m_spellInfo->Id != 51690 && m_spellInfo->Id != 53055)
+            if (!(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NOT_BREAK_STEALTH) && m_spellInfo->Id != 51690 && m_spellInfo->Id != 53055 && 
+                m_spellInfo->Id != 3600 && m_spellInfo->Id != 44416 && m_spellInfo->SpellIconID != 1954 && m_spellInfo->SpellIconID != 2267)
                 unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
             // can cause back attack (if detected), stealth removed at Spell::cast if spell break it
@@ -1590,6 +1598,13 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 50988:                                 // Glare of the Tribunal (Halls of Stone)
                 case 59870:                                 // Glare of the Tribunal (h) (Halls of Stone)
                 case 68950:                                 // Fear (ICC: Forge of Souls)
+                case 63018:                                 // XT002's Light Bomb
+                case 65121:                                 // XT002's Light Bomb (h)
+                case 63024:                                 // XT002's Gravitiy Bomb
+                case 64234:                                 // XT002's Gravitiy Bomb (h)
+                case 61916:                                 // Lightning Whirl (10 man) 
+                case 63482:                                 // Lightning Whirl (25 man) 
+				case 55479:                                 // Force Obedience (Naxxramas - Razovius encounter)
                 case 66001:                                 // Touch of Darkness
                 case 67281:
                 case 67282:
@@ -1610,6 +1625,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 31298:                                 // Sleep
                 case 51904:                                 // Limiting the count of Summoned Ghouls
                 case 54522:
+                case 61693:                                 // Arcane Storm (Malygos) (N)
                     unMaxTargets = 3;
                     break;
                 case 30843:                                 // Enfeeble TODO: exclude top threat target from target selection
@@ -1618,6 +1634,8 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 67700:                                 // Penetrating Cold (25 man)
                 case 68510:                                 // Penetrating Cold (25 man, heroic)
                     unMaxTargets = 5;
+                case 61694:                                 // Arcane Storm(H) (25 man) (Malygos) 
+                    unMaxTargets = 7; 
                     break;
                 case 54098:                                 // Poison Bolt Volley (h)
                 case 54835:                                 // Curse of the Plaguebringer (h)
@@ -1941,6 +1959,25 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         }
         case TARGET_ALL_ENEMY_IN_AREA:
             FillAreaTargets(targetUnitMap, m_targets.m_destX, m_targets.m_destY, radius, PUSH_DEST_CENTER, SPELL_TARGETS_AOE_DAMAGE);
+        // Ghoul Taunt (Army of the Dead) - exclude Player and WorldBoss targets
+            if (m_spellInfo->Id == 43263)
+            {
+                if (!targetUnitMap.empty() )
+                {
+                    for (UnitList::iterator itr = targetUnitMap.begin(); itr != targetUnitMap.end();)
+                    {
+                        Creature *pTmp = (Creature*)(*itr);
+                        if ( ((*itr) && (*itr)->GetTypeId() == TYPEID_PLAYER) || (pTmp && pTmp->IsWorldBoss()) )
+                        {
+                            targetUnitMap.erase(itr);
+                            targetUnitMap.sort();
+                            itr = targetUnitMap.begin();
+                            continue;
+                        }
+                        itr++;
+                    }
+                }
+            }
             break;
         case TARGET_AREAEFFECT_INSTANT:
         {
@@ -2313,6 +2350,11 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             else
                 FillAreaTargets(targetUnitMap, m_targets.m_destX, m_targets.m_destY, radius, PUSH_DEST_CENTER, SPELL_TARGETS_FRIENDLY);
             break;
+            // Mana Detonation (Kel'Thuzad in Naxxramas) - should not damage caster
+			if (m_spellInfo->Id == 27820)
+			{
+			    targetUnitMap.remove(m_caster);
+			}
         // TARGET_SINGLE_PARTY means that the spells can only be casted on a party member and not on the caster (some seals, fire shield from imp, etc..)
         case TARGET_SINGLE_PARTY:
         {
@@ -3214,6 +3256,12 @@ void Spell::cast(bool skipCheck)
             // Shattering Throw
             else if (m_spellInfo->Id == 64382)
                 AddTriggeredSpell(64380);                     // Shattering Throw
+				
+            // Item - Warrior T10 Melee 4P Bonus
+            else if (m_spellInfo->Id == 46916 || m_spellInfo->Id == 52437)
+				if (Aura *aur = m_caster->GetAura(70847, EFFECT_INDEX_0))
+                    if (roll_chance_i(aur->GetModifier()->m_amount))
+                        AddTriggeredSpell(70849);
             break;
         }
         case SPELLFAMILY_PRIEST:
@@ -3246,6 +3294,9 @@ void Spell::cast(bool skipCheck)
             // Faerie Fire (Feral)
             if (m_spellInfo->Id == 16857 && m_caster->GetShapeshiftForm() != FORM_CAT)
                 AddTriggeredSpell(60089);
+             // Item - Druid T10 Balance 2P Bonus
+            else if (m_spellInfo->Id == 16870 && m_caster->HasAura(70718))
+                AddTriggeredSpell(70721);
             // Berserk (Bear Mangle part)
             else if (m_spellInfo->Id == 50334)
                 AddTriggeredSpell(58923);
@@ -4620,6 +4671,9 @@ void Spell::CastPreCastSpells(Unit* target)
 
 SpellCastResult Spell::CheckCast(bool strict)
 {
+    // Ebonweave
+    if(m_spellInfo->Id==56002 && m_caster->GetAreaId()==4167) return SPELL_CAST_OK;
+
     // check cooldowns to prevent cheating (ignore passive spells, that client side visual only)
     if (m_caster->GetTypeId()==TYPEID_PLAYER && !(m_spellInfo->Attributes & SPELL_ATTR_PASSIVE) &&
         ((Player*)m_caster)->HasSpellCooldown(m_spellInfo->Id))
@@ -4963,13 +5017,31 @@ SpellCastResult Spell::CheckCast(bool strict)
 
 
     // not let players cast spells at mount (and let do it to creatures)
-    if ((m_caster->IsMounted() || (m_caster->GetVehicle() && !castOnVehicleAllowed)) && m_caster->GetTypeId() == TYPEID_PLAYER && !m_IsTriggeredSpell && 
+    VehicleKit* pVehicle = m_caster->GetVehicle();
+    if ((m_caster->IsMounted() || pVehicle) && m_caster->GetTypeId()==TYPEID_PLAYER && !m_IsTriggeredSpell &&
         !IsPassiveSpell(m_spellInfo) && !(m_spellInfo->Attributes & SPELL_ATTR_CASTABLE_WHILE_MOUNTED))
     {
         if (m_caster->IsTaxiFlying())
             return SPELL_FAILED_NOT_ON_TAXI;
+        else if ((sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE)) && (m_spellInfo->Id==55884))
+        {
+            Player* player = (Player*)m_caster;
+            uint32 spellToLearn = ((m_spellInfo->Id==SPELL_ID_GENERIC_LEARN) || (m_spellInfo->Id==SPELL_ID_GENERIC_LEARN_PET)) ? damage : m_spellInfo->EffectTriggerSpell[0];
+            SpellEntry const *sEntry = sSpellStore.LookupEntry(spellToLearn);
+            if(sEntry)
+            {
+                if(player->isFlyingSpell(sEntry) || player->isFlyingFormSpell(sEntry))
+                    return SPELL_CAST_OK;
+            }
+        }
         else
-            return SPELL_FAILED_NOT_MOUNTED;
+        {
+            uint32 uiEntry = 0;
+            if (pVehicle && pVehicle->GetBase())
+                uiEntry = pVehicle->GetBase()->GetEntry();
+            if (uiEntry != 30248 && uiEntry != 33118)
+                return SPELL_FAILED_NOT_MOUNTED;
+        }
     }
 
     // always (except passive spells) check items (focus object can be required for any type casts)
@@ -5620,6 +5692,16 @@ SpellCastResult Spell::CheckCast(bool strict)
                         return SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW; 
                 break;
             }
+            case SPELL_EFFECT_TRANS_DOOR:
+            {
+                if(m_caster->GetTypeId() == TYPEID_PLAYER)
+                {
+                    if(m_spellInfo->Id == 698)
+                        if(((Player*)m_caster)->GetMap()->IsBattleGround())
+                            return SPELL_FAILED_NOT_HERE;
+                }
+                break;
+            }
             default:break;
         }
     }
@@ -5797,6 +5879,9 @@ SpellCastResult Spell::CheckCast(bool strict)
             return SPELL_FAILED_DONT_REPORT;
         }
     }
+	
+    if (m_spellInfo->Id == 781 && !m_caster->isInCombat()) //Disengage
+         return SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
 
     // all ok
     return SPELL_CAST_OK;
@@ -6243,6 +6328,16 @@ SpellCastResult Spell::CheckItems()
     Player* p_caster = (Player*)m_caster;
     bool isScrollItem = false;
     bool isVellumTarget = false;
+    if ((sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE)) && (m_spellInfo->Id==55884))
+    {
+        uint32 spellToLearn = ((m_spellInfo->Id==SPELL_ID_GENERIC_LEARN) || (m_spellInfo->Id==SPELL_ID_GENERIC_LEARN_PET)) ? damage : m_spellInfo->EffectTriggerSpell[0];
+        SpellEntry const *sEntry = sSpellStore.LookupEntry(spellToLearn);
+        if(sEntry)
+        {
+            if(p_caster->isFlyingSpell(sEntry) || p_caster->isFlyingFormSpell(sEntry))
+                return SPELL_CAST_OK;
+        }
+    }
 
     // cast item checks
     if(m_CastItem)
@@ -6540,7 +6635,7 @@ SpellCastResult Spell::CheckItems()
                     return SPELL_FAILED_CANT_BE_DISENCHANTED;
 
                 // prevent disenchanting in trade slot
-                if( m_targets.getItemTarget()->GetOwnerGuid() != m_caster->GetObjectGuid() )
+                if( m_targets.getItemTarget()->GetOwnerGuid() != m_caster->GetObjectGuid())
                     return SPELL_FAILED_CANT_BE_DISENCHANTED;
 
                 ItemPrototype const* itemProto = m_targets.getItemTarget()->GetProto();

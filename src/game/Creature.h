@@ -176,7 +176,7 @@ struct EquipmentInfo
 // from `creature` table
 struct CreatureData
 {
-    uint32 id;                                              // entry in creature_template
+    uint32 id;                                            // entry in creature_template
     uint16 mapid;
     uint16 phaseMask;
     uint32 modelid_override;                                // overrides any model defined in creature_template
@@ -416,6 +416,9 @@ class MANGOS_DLL_SPEC Creature : public Unit
         bool IsTotem() const { return m_subtype == CREATURE_SUBTYPE_TOTEM; }
         bool IsTemporarySummon() const { return m_subtype == CREATURE_SUBTYPE_TEMPORARY_SUMMON; }
 
+        // Playerbot mod - adds functionality to load/unload bots from NPC, also need to apply SQL scripts
+        void LoadBotMenu(Player *pPlayer);
+
         bool IsCorpse() const { return getDeathState() ==  CORPSE; }
         bool IsDespawned() const { return getDeathState() ==  DEAD; }
         void SetCorpseDelay(uint32 delay) { m_corpseDelay = delay; }
@@ -628,16 +631,15 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         void SetActiveObjectState(bool on);
 
-        void SetNeedNotify() { m_needNotify = true; }
-
         void SendAreaSpiritHealerQueryOpcode(Player *pl);
 
         void LockAI(bool lock) { m_AI_locked = lock; }
 
     protected:
-        bool CreateFromProto(ObjectGuid guid, uint32 Entry, Team team, const CreatureData *data = NULL, GameEventCreatureData const* eventData =NULL);
+       bool CreateFromProto(ObjectGuid guid, uint32 Entry, Team team, const CreatureData *data = NULL, GameEventCreatureData const* eventData =NULL);
         bool InitEntry(uint32 entry, const CreatureData* data = NULL, GameEventCreatureData const* eventData = NULL);
         void RelocationNotify();
+
 
         // vendor items
         VendorItemCounts m_vendorItemCounts;
@@ -669,7 +671,6 @@ class MANGOS_DLL_SPEC Creature : public Unit
         bool m_regenHealth;
         bool m_AI_locked;
         bool m_isDeadByDefault;
-        bool m_needNotify;
 
         SpellSchoolMask m_meleeDamageSchoolMask;
         uint32 m_originalEntry;

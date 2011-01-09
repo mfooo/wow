@@ -53,6 +53,7 @@
 #include "Language.h"
 #include "TemporarySummon.h"
 #include "VMapFactory.h"
+#include "MoveMap.h"
 #include "GameEventMgr.h"
 #include "PoolManager.h"
 #include "Database/DatabaseImpl.h"
@@ -64,6 +65,8 @@
 #include "Util.h"
 #include "CharacterDatabaseCleaner.h"
 #include "AuctionHouseBot.h"
+#include "Language.h"
+#include "playerbot/config.h"
 
 INSTANTIATE_SINGLETON_1( World );
 
@@ -79,6 +82,25 @@ float World::m_MaxVisibleDistanceForObject    = DEFAULT_VISIBILITY_DISTANCE;
 float World::m_MaxVisibleDistanceInFlight     = DEFAULT_VISIBILITY_DISTANCE;
 float World::m_VisibleUnitGreyDistance        = 0;
 float World::m_VisibleObjectGreyDistance      = 0;
+
+extern Config botConfig;
+
+//PVP Announcer
+void World::SendPvPAnnounce(Player* killer, Player* killed)
+{
+  std::ostringstream msg;
+  std::ostringstream KillerName;
+  std::ostringstream KilledName;
+  std::string KillerColor = sConfig.GetStringDefault("PvPAnnouncer.ColorKiller", "|CFFFFFF01");
+  std::string KilledColor = sConfig.GetStringDefault("PvPAnnouncer.ColorKilled", "|CFFFFFF01");
+  std::string AreaColor = sConfig.GetStringDefault("PvPAnnouncer.ColorArea", "|CFFFE8A0E");
+
+  KillerName << killer->GetName();
+  KilledName << killed->GetName();
+
+  msg << KillerColor << KillerName.str().c_str() << "]" << "|CFF0042FF Has Killed " << KilledColor << KilledName.str().c_str() << "]" << "|CFFE55BB0 in " << AreaColor << "[" << killer->GetMap()->GetMapName() << "]";
+  SendWorldText(LANG_SYSTEMMESSAGE, msg.str().c_str());
+}
 
 /// World constructor
 World::World()
@@ -134,6 +156,7 @@ World::~World()
         delete command;
 
     VMAP::VMapFactory::clear();
+    MMAP::MMapFactory::clear();
 
     if(m_resultQueue) delete m_resultQueue;
 
@@ -754,7 +777,9 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_ARENA_SEASON_PREVIOUS_ID,                  "Arena.ArenaSeasonPrevious.ID", 0);
     setConfigMin(CONFIG_INT32_ARENA_STARTRATING,                       "Arena.StartRating", -1, -1);
     setConfigMin(CONFIG_INT32_ARENA_STARTPERSONALRATING,               "Arena.StartPersonalRating", -1, -1);
-
+    setConfig(CONFIG_UINT32_LOSERNOCHANGE,                             "Arena.LoserNoChange", 0);
+    setConfig(CONFIG_UINT32_LOSERHALFCHANGE,                           "Arena.LoserHalfChange", 0);
+ 
     setConfig(CONFIG_BOOL_OFFHAND_CHECK_AT_TALENTS_RESET, "OffhandCheckAtTalentsReset", false);
 
     setConfig(CONFIG_BOOL_KICK_PLAYER_ON_BAD_PACKET, "Network.KickOnBadPacket", false);
@@ -782,8 +807,26 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_TIMERBAR_BREATH_MAX,      "TimerBar.Breath.Max", 180);
     setConfig(CONFIG_UINT32_TIMERBAR_FIRE_GMLEVEL,    "TimerBar.Fire.GMLevel", SEC_CONSOLE);
     setConfig(CONFIG_UINT32_TIMERBAR_FIRE_MAX,        "TimerBar.Fire.Max", 1);
+	
+	// PvP Token System
+    setConfig(CONFIG_BOOL_PVP_TOKEN_ENABLE,"PvPToken.Enable", true);
+    setConfig(CONFIG_FLOAT_PVP_TOKEN_ITEMID,"PvPToken.ItemID", 29434);
+    setConfig(CONFIG_FLOAT_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount", 1);
+    setConfig(CONFIG_FLOAT_PVP_TOKEN_GOLD,"PvPToken.Gold", 100000);
+    setConfig(CONFIG_FLOAT_PVP_TOKEN_RESTRICTION,"PvPToken.MapRestriction", 4);
+    // PvP Announcer System
+    setConfig(CONFIG_BOOL_PVP_ANNOUNCER,"PvPAnnouncer.Enable", true);
+
+    if(getConfig(CONFIG_FLOAT_PVP_TOKEN_ITEMCOUNT) < 1)
+        setConfig(CONFIG_FLOAT_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount",1);
+	
+    /*  Flying Everywhere   */
+    setConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE, "Custom.AllowFlyingMountsEverywhere", true);
 
     setConfig(CONFIG_BOOL_PET_UNSUMMON_AT_MOUNT,      "PetUnsummonAtMount", true);
+	
+    Map::relocation_ai_notify_delay = sConfig.GetIntDefault("Visibility.AIRelocationNotifyDelay",1000u);
+    Map::relocation_lower_limit_sq  = pow(sConfig.GetFloatDefault("Visibility.RelocationLowerLimit",10.f), 2);
 
     setConfig(CONFIG_BOOL_ALLOW_FLIGHT_ON_OLD_MAPS, "AllowFlightOnOldMaps", false);
 
@@ -892,6 +935,16 @@ void World::LoadConfigSettings(bool reload)
     sLog.outString( "WORLD: VMap support included. LineOfSight:%i, getHeight:%i, indoorCheck:%i",
         enableLOS, enableHeight, getConfig(CONFIG_BOOL_VMAP_INDOOR_CHECK) ? 1 : 0);
     sLog.outString( "WORLD: VMap data directory is: %svmaps",m_dataPath.c_str());
+
+    setConfig(CONFIG_BOOL_MMAP_ENABLED, "mmap.enabled", true);
+    std::string ignoreMapIds = sConfig.GetStringDefault("mmap.ignoreMapIds", "");
+    MMAP::MMapFactory::preventPathfindingOnMaps(ignoreMapIds.c_str());
+    sLog.outString("WORLD: mmap pathfinding %sabled", getConfig(CONFIG_BOOL_MMAP_ENABLED) ? "en" : "dis");
+	
+	setConfig(CONFIG_UINT32_BASE_PET_SCALE      , "Custom.PetScale"      , 1); 
+    setConfig(CONFIG_BOOL_EXTERNAL_MAIL_ENABLED     , "ExternalMail.Enabled"    , false); 
+    setConfig(CONFIG_UINT32_EXTERNAL_MAIL_INTERVAL  , "ExternalMail.Interval"   , 1); 
+
 }
 
 /// Initialize the World
@@ -902,6 +955,9 @@ void World::SetInitialWorldSettings()
 
     ///- Time server startup
     uint32 uStartTime = WorldTimer::getMSTime();
+	
+    ///- Initialize detour memory management
+    dtAllocSetCustom(dtCustomAlloc, dtCustomFree);
 
     ///- Initialize config settings
     LoadConfigSettings();
@@ -1263,6 +1319,9 @@ void World::SetInitialWorldSettings()
     ///- Handle outdated emails (delete/return)
     sLog.outString( "Returning old mails..." );
     sObjectMgr.ReturnOrDeleteOldMails(false);
+	
+    // Loads the jail conf out of the database
+    sObjectMgr.LoadJailConf();
 
     ///- Load and initialize scripts
     sLog.outString( "Loading Scripts..." );
@@ -1329,6 +1388,7 @@ void World::SetInitialWorldSettings()
     m_timers[WUPDATE_UPTIME].SetInterval(getConfig(CONFIG_UINT32_UPTIME_UPDATE)*MINUTE*IN_MILLISECONDS);
                                                             //Update "uptime" table based on configuration entry in minutes.
     m_timers[WUPDATE_CORPSES].SetInterval(20*MINUTE*IN_MILLISECONDS);
+    m_timers[WUPDATE_EXT_MAIL].SetInterval(m_configUint32Values[CONFIG_UINT32_EXTERNAL_MAIL_INTERVAL] * MINUTE * IN_MILLISECONDS); // External mail 	
     m_timers[WUPDATE_DELETECHARS].SetInterval(DAY*IN_MILLISECONDS); // check for chars to delete every day
     m_timers[WUPDATE_AUTOBROADCAST].SetInterval(abtimer);
 
@@ -1381,6 +1441,17 @@ void World::SetInitialWorldSettings()
 
     // Delete all characters which have been deleted X days before
     Player::DeleteOldCharacters();
+	
+    //Get playerbot configuration file
+    if (!botConfig.SetSource(_PLAYERBOT_CONFIG))
+        sLog.outError("Playerbot: Unable to open configuration file. Database will be unaccessible. Configuration values will use default.");
+    else
+        sLog.outString("Playerbot: Using configuration file %s",_PLAYERBOT_CONFIG);
+
+    //Check playerbot config file version
+    if (botConfig.GetIntDefault("ConfVersion", 0) != PLAYERBOT_CONF_VERSION)
+        sLog.outError("Playerbot: Configuration file version doesn't match expected version. Some config variables may be wrong or missing.");
+
 
     sLog.outString("Initialize AuctionHouseBot...");
     auctionbot.Initialize();
@@ -1572,6 +1643,14 @@ void World::Update(uint32 diff)
             SendBroadcast();
         }
     }
+	
+	/*///- Process External Mail Queue when necessary 
+    if(m_configBoolValues[CONFIG_BOOL_EXTERNAL_MAIL_ENABLED] && m_timers[WUPDATE_EXT_MAIL].Passed()) 
+    { 
+        WorldSession::SendExternalMails(); 
+        m_timers[WUPDATE_EXT_MAIL].Reset(); 
+    } */
+
 
     /// </ul>
     ///- Move all creatures with "delayed move" and remove and delete all objects with "delayed remove"

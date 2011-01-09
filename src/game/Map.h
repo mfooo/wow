@@ -39,6 +39,7 @@
 
 #include <bitset>
 #include <list>
+#include <set>
 
 class Creature;
 class Unit;
@@ -229,6 +230,9 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>
             i_objectsToClientUpdate.erase( obj );
         }
 
+        static float  relocation_lower_limit_sq;
+        static uint32 relocation_ai_notify_delay;
+
         // DynObjects currently
         uint32 GenerateLocalLowGuid(HighGuid guidhigh);
 
@@ -261,8 +265,9 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>
 
         NGridType* getNGrid(uint32 x, uint32 y) const
         {
-            MANGOS_ASSERT(x < MAX_NUMBER_OF_GRIDS);
-            MANGOS_ASSERT(y < MAX_NUMBER_OF_GRIDS);
+            if (x >= MAX_NUMBER_OF_GRIDS || y >= MAX_NUMBER_OF_GRIDS) 
+                return NULL;
+
             return i_grids[x][y];
         }
 

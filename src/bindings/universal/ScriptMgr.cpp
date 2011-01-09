@@ -256,6 +256,18 @@ bool GOHello( Player *player, GameObject *_GO )
     return tmpscript->pGOHello(player,_GO);
 }
 
+MANGOS_DLL_EXPORT        // Seems like this should be here
+bool GOUse( Player *player, GameObject *_GO )
+{
+    Script *tmpscript = m_scripts[_GO->GetGOInfo()->ScriptId];
+    if (!tmpscript || !tmpscript->pGOUse)
+        return false;
+
+    player->PlayerTalkClass->ClearMenus();
+
+    return tmpscript->pGOUse(player,_GO);
+}
+
 MANGOS_DLL_EXPORT
 bool GOQuestAccept( Player *player, GameObject *_GO, Quest *_Quest )
 {

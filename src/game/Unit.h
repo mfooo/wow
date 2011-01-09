@@ -447,6 +447,8 @@ enum UnitState
     UNIT_STAT_FLEEING_MOVE    = 0x00040000,
     UNIT_STAT_ON_VEHICLE      = 0x00080000,                     // Unit is on vehicle
 
+    UNIT_STAT_IGNORE_PATHFINDING    = 0x00080000,               // do not use pathfinding in any MovementGenerator
+
     // masks (only for check)
 
     // can't move currently
@@ -856,6 +858,13 @@ inline ByteBuffer& operator>> (ByteBuffer& buf, MovementInfo& mi)
     mi.Read(buf);
     return buf;
 }
+
+enum RelocationOperations
+{
+    AI_Notify_Sheduled          = 0x01,         // AI relocation notification sheduled
+    AI_Notify_Execution         = 0x02,         // AI relocation notification will be executed in next update tick
+    Visibility_Update_Execution = 0x04,         // Visibility will be updated in next update tick
+};
 
 enum DiminishingLevels
 {
@@ -1521,6 +1530,11 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void MonsterMove(float x, float y, float z, uint32 transitTime);
         void MonsterMoveWithSpeed(float x, float y, float z, uint32 transitTime = 0);
         void MonsterJump(float x, float y, float z, float o, uint32 transitTime, uint32 verticalSpeed);
+		
+        void MonsterMoveByPath(float x, float y, float z, uint32 speed, bool smoothPath = true);
+        template<typename PathElem, typename PathNode>
+        void MonsterMoveByPath(Path<PathElem,PathNode> const& path, uint32 start, uint32 end, uint32 transitTime = 0);
+
 
         // recommend use MonsterMove/MonsterMoveWithSpeed for most case that correctly work with movegens
         // if used additional args in ... part then floats must explicitly casted to double
@@ -1532,7 +1546,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         virtual bool SetPosition(float x, float y, float z, float orientation, bool teleport = false);
 
         template<typename PathElem, typename PathNode>
-        void SendMonsterMoveByPath(Path<PathElem,PathNode> const& path, uint32 start, uint32 end, SplineFlags flags);
+        void SendMonsterMoveByPath(Path<PathElem,PathNode> const& path, uint32 start, uint32 end, SplineFlags flags, uint32 traveltime);
 
         void SendHighestThreatUpdate(HostileReference* pHostileReference);
         void SendThreatClear();
@@ -1540,6 +1554,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void SendThreatUpdate();
 
         void SendHeartBeat(bool toSelf);
+        void BuildHeartBeatMsg( WorldPacket *data ) const;
 
         virtual void MoveOutOfRange(Player &) {  };
 
@@ -1807,6 +1822,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void addHatedBy(HostileReference* pHostileReference) { m_HostileRefManager.insertFirst(pHostileReference); };
         void removeHatedBy(HostileReference* /*pHostileReference*/ ) { /* nothing to do yet */ }
         HostileRefManager& getHostileRefManager() { return m_HostileRefManager; }
+        void RemoveUnitFromHostileRefManager(Unit* p_unit);
 
         uint32 GetVisibleAura(uint8 slot)
         {
@@ -1827,6 +1843,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
 
         Aura* GetAura(uint32 spellId, SpellEffectIndex effindex);
         Aura* GetAura(AuraType type, SpellFamily family, uint64 familyFlag, uint32 familyFlag2 = 0, ObjectGuid casterGuid = ObjectGuid());
+        Aura* GetAura(AuraType type, uint32 family, uint32 spellIconID, SpellEffectIndex effindex, uint64 casterGUID = 0);
         SpellAuraHolder* GetSpellAuraHolder (uint32 spellid, uint64 casterGUID = 0);
 
         SpellAuraHolderMap      & GetSpellAuraHolderMap()       { return m_spellAuraHolders; }
@@ -2044,6 +2061,16 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
 
         // Movement info
         MovementInfo m_movementInfo;
+		
+        void SheduleAINotify(uint32 delay);
+        void SheduleVisibilityUpdate();
+
+        uint8 m_notify_sheduled;
+        bool isNotifySheduled(uint8 f) const { return m_notify_sheduled & f;}
+        struct 
+        {
+            float x, y, z;
+        } m_last_notified_position;
 
         // Transports
         Transport* GetTransport() const { return m_transport; }
@@ -2258,7 +2285,7 @@ bool Unit::CheckAllControlledUnits(Func const& func, uint32 controlledMask) cons
 
     return false;
 }
-
+/* -- removed from mangos for mmaps -- 
 template<typename Elem, typename Node>
 inline void Unit::SendMonsterMoveByPath(Path<Elem,Node> const& path, uint32 start, uint32 end, SplineFlags flags)
 {
@@ -2287,5 +2314,5 @@ inline void Unit::SendMonsterMoveByPath(Path<Elem,Node> const& path, uint32 star
 
     SendMessageToSet(&data, true);
 }
-
+*/
 #endif

@@ -1272,8 +1272,16 @@ void Aura::TriggerSpell()
                         triggerTarget->CastCustomSpell(triggerTarget, 29879, &bpDamage, NULL, NULL, true, NULL, this, casterGUID);
                         return;
                     }
-//                    // Detonate Mana
-//                    case 27819: break;
+                       // Detonate Mana (Kel'Thuzad in Naxxramas)
+                    case 27819:
+                    {
+                        if (target->getPowerType() != POWER_MANA)
+                            return;
+                        int32 bpDamage = target->GetMaxPower(POWER_MANA);
+                        target->CastCustomSpell(target, 27820, &bpDamage, 0, 0, true);
+                        target->ModifyPower(POWER_MANA, -2000);
+                        return;
+                    }
 //                    // Controller Timer
 //                    case 28095: break;
 //                    // Stalagg Chain
@@ -1288,8 +1296,11 @@ void Aura::TriggerSpell()
 //                    case 28114: break;
 //                    // Communique Timer, camp
 //                    case 28346: break;
-//                    // Icebolt
-//                    case 28522: break;
+//                    // Icebolt (Sapphiron - Naxxramas)
+                    case 28522:                      // should apply some kind of iceblock visual aura
+                        if (!target->HasAura(45776)) // dunno if triggered spell id is correct
+                            trigger_spell_id = 45776;
+                        break;
 //                    // Silithyst
 //                    case 29519: break;
                     case 29528:                             // Inoculate Nestlewood Owlkin
@@ -1937,6 +1948,18 @@ void Aura::TriggerSpell()
             case 48094:                                      // Intense Cold
                 triggerTarget->CastSpell(triggerTarget, trigger_spell_id, true, NULL, this);
                 return;
+            // Static Charge (Lady Vashj in Serpentshrine Cavern)
+            case 38280:
+            // Static Overload normal (Ionar in Halls of Lightning)
+            case 52658:
+            // Static Overload heroic (Ionar in Halls of Lightning)
+            case 59795:
+            // Searing Light (normal&heroic) (XT-002 in Ulduar)
+            case 63018:
+            case 65121:
+            // Gravity Bomb (normal&heroic) (XT-002 in Ulduar)
+            case 63024:
+            case 64234:
             case 53563:                                     // Beacon of Light
                 // original caster must be target (beacon)
                 target->CastSpell(target, trigger_spell_id, true, NULL, this, target->GetGUID());
@@ -2029,6 +2052,33 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                         if (Unit* caster = GetCaster())
                             caster->CastSpell(caster, 13138, true, NULL, this);
                         return;
+                    case 28832:                             // Mark of Korth'azz
+                    case 28833:                             // Mark of Blaumeux
+                    case 28834:                             // Mark of Rivendare
+                    case 28835:                             // Mark of Zeliek
+                    {
+                         Aura* aur = target->GetAura(GetId(), EFFECT_INDEX_0);
+                         if (!aur)
+                             return;
+
+                         uint8 stacks = aur->GetStackAmount();
+                         int32 damage = 0;
+
+                         if (stacks == 2)
+                            damage = 500;
+                         else if (stacks == 3)
+                            damage = 1500;
+                         else if (stacks == 4)
+                            damage = 4000;
+                         else if (stacks == 5)
+                            damage = 12500;
+                         else if (stacks > 5)
+                            damage = 20000 + 1000 * (stacks - 6);
+
+                         if (Unit* caster = GetCaster())
+                              target->CastCustomSpell(target, 28836, &damage, NULL, NULL, true, NULL, this, caster->GetGUID());
+                         return;
+                    }
                     case 31606:                             // Stormcrow Amulet
                     {
                         CreatureInfo const * cInfo = ObjectMgr::GetCreatureTemplate(17970);
@@ -2088,10 +2138,6 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     case 48025:                             // Headless Horseman's Mount
                         Spell::SelectMountByAreaAndSkill(target, 51621, 48024, 51617, 48023, 0);
                         return;
-                    case 50141:                             // Blood Oath
-                        // Blood Oath
-                        target->CastSpell(target, 50001, true, NULL, this);
-                        return;
                     case 55328:                                 // Stoneclaw Totem I
                         target->CastSpell(target, 5728, true);
                         return;
@@ -2121,6 +2167,10 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                         return;
                     case 58591:                                 // Stoneclaw Totem X
                         target->CastSpell(target, 58585, true);
+                        return;
+                    case 50141:                             // Blood Oath
+                        if (Unit* caster = GetCaster())
+                            caster->CastSpell(caster, 50001, true, NULL, this);
                         return;
                     case 62061:                             // Festive Holiday Mount
                         if (target->HasAuraType(SPELL_AURA_MOUNTED))
@@ -4336,6 +4386,11 @@ void Aura::HandleModStealth(bool apply, bool Real)
         // only at real aura add
         if (Real)
         {
+        
+            //Player stealths has no logner ranks...could be correct
+            if(GetSpellProto()->EffectRealPointsPerLevel[GetEffIndex()])
+                m_modifier.m_amount = target->getLevel()*GetSpellProto()->EffectRealPointsPerLevel[GetEffIndex()];
+
             target->SetStandFlags(UNIT_STAND_FLAGS_CREEP);
 
             if (target->GetTypeId()==TYPEID_PLAYER)
@@ -5044,12 +5099,15 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                     target->CastSpell(target, 32612, true, NULL, this);
 
                 return;
-            case 42783:                                     // Wrath of the Astrom...
+            case 28522:                                     // Icebolt (Naxxramas: Sapphiron)
+                if (target->HasAura(45776))                 // Should trigger/remove some kind of iceblock
+                    target->RemoveAurasDueToSpell(45776);   // not sure about ice block spell id
+                return;
+            case 42783:                                     //Wrath of the Astrom...
                 if (m_removeMode == AURA_REMOVE_BY_EXPIRE && GetEffIndex() + 1 < MAX_EFFECT_INDEX)
                     target->CastSpell(target, GetSpellProto()->CalculateSimpleValue(SpellEffectIndex(GetEffIndex()+1)), true);
-
                 return;
-            case 46221:                                     // Animal Blood
+			case 46221:                                     // Animal Blood
                 if (target->GetTypeId() == TYPEID_PLAYER && m_removeMode == AURA_REMOVE_BY_DEFAULT && target->IsInWater())
                 {
                     float position_z = target->GetTerrain()->GetWaterLevel(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
@@ -5057,7 +5115,7 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                     target->CastSpell(target->GetPositionX(), target->GetPositionY(), position_z, 63471, true);
                 }
 
-                return;
+                 return;
             case 51912:                                     // Ultra-Advanced Proto-Typical Shortening Blaster
                 if (m_removeMode == AURA_REMOVE_BY_EXPIRE)
                 {
@@ -5191,6 +5249,22 @@ void Aura::HandleAuraPeriodicDummy(bool apply, bool Real)
             if (apply && !loading && caster)
                 m_modifier.m_amount += int32(caster->GetTotalAttackPowerValue(RANGED_ATTACK) * 14 / 100);
             break;
+        }
+        case SPELLFAMILY_DEATHKNIGHT:
+        {
+            Unit* pCaster = GetCaster();
+
+            if (apply)
+            {
+                // Summon Gargoyle
+                if (GetId() == 49206)
+                {
+                    if (pCaster)
+                        if (Pet *pGargoyle = pCaster->FindGuardianWithEntry(GetSpellProto()->EffectMiscValue[EFFECT_INDEX_0]) )
+                            if (pGargoyle->getVictim() != target)
+                                pGargoyle->AI()->AttackStart(target);
+                }
+            }
         }
     }
 
@@ -5356,6 +5430,15 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
         // Parasitic Shadowfiend - handle summoning of two Shadowfiends on DoT expire
         if(spellProto->Id == 41917)
             target->CastSpell(target, 41915, true);
+			
+		// Deathbloom (Naxxramas - Loatheb normal)
+        if (spellProto->Id == 29865)
+            target->CastSpell(target, 55594, true);
+
+        // Deathbloom (Naxxramas - Loatheb heroic)
+        if (spellProto->Id == 55053)
+            target->CastSpell(target, 55601, true);
+			
         else if (spellProto->Id == 74562) // SPELL_FIERY_COMBUSTION - Ruby sanctum boss Halion
             target->CastSpell(target, 74607, true, NULL, NULL, GetCasterGUID());
         else if (spellProto->Id == 74792) // SPELL_SOUL_CONSUMPTION - Ruby sanctum boss Halion
@@ -6386,10 +6469,13 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             break;
         case FORM_SHADOW:
             spellId1 = 49868;
-            spellId2 = 71167;
+			spellId2 = 71167;
 
-            if(target->GetTypeId() == TYPEID_PLAYER)      // Spell 49868 have same category as main form spell and share cooldown
+            if(target->GetTypeId() == TYPEID_PLAYER)      // Spell 49868 and 71167 have same category as main form spell and share cooldown
+			{
                 ((Player*)target)->RemoveSpellCooldown(49868);
+				((Player*)target)->RemoveSpellCooldown(71167);
+			}
             break;
         case FORM_GHOSTWOLF:
             spellId1 = 67116;
@@ -6921,6 +7007,16 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                 data << end_time*IN_MILLISECONDS;
                 plr->SendDirectMessage(&data);
             }
+        }
+        // Shield of Runes (normal) (Runemaster Molgeim, Assembly of Iron encounter in Ulduar)
+        else if (target && spellProto->Id == 62274 && m_removeMode == AURA_REMOVE_BY_SHIELD_BREAK)
+        {
+            target->CastSpell(target, 62277, true);
+        }
+        // Shield of Runes (heroic) (Runemaster Molgeim, Assembly of Iron encounter in Ulduar)
+        else if (caster && spellProto->Id == 63489 && m_removeMode == AURA_REMOVE_BY_SHIELD_BREAK)
+        {
+            target->CastSpell(target, 63967, true);
         }
     }
 }
@@ -7862,6 +7958,33 @@ void Aura::PeriodicDummyTick()
                         target->RemoveAurasDueToSpell(spell->Id);
                     return;
                 }
+                case 54798: // FLAMING Arrow Triggered Effect 
+                { 
+                    Unit * caster = GetCaster(); 
+                    if (!caster) 
+                        return; 
+ 
+                    if (target->GetTypeId() == TYPEID_UNIT || !caster->GetObjectGuid().IsVehicle()) 
+                        return; 
+ 
+                    Unit *rider = caster->GetVehicleKit()->GetPassenger(0); 
+                    if (!rider) 
+                        return; 
+ 
+                    // set ablaze 
+                    if (target->HasAura(54683, EFFECT_INDEX_0)) 
+                        return; 
+                    else 
+                        target->CastSpell(target, 54683, true); 
+ 
+                    // Credit Frostworgs 
+                    if (target->GetEntry() == 29358) 
+                        rider->CastSpell(rider, 54896, true); 
+                    // Credit Frost Giants 
+                    else if (target->GetEntry() == 29351) 
+                        rider->CastSpell(rider, 54893, true);  
+                    break; 
+               } 
 // Exist more after, need add later
                 default:
                     break;
@@ -8841,7 +8964,7 @@ void SpellAuraHolder::SetStackAmount(uint32 stackAmount)
                 int32 bp = aur->GetBasePoints();
                 int32 amount = m_stackAmount * caster->CalculateSpellDamage(target, m_spellProto, SpellEffectIndex(i), &bp);
                 // Reapply if amount change
-                if (amount != aur->GetModifier()->m_amount)
+                if (amount != aur->GetModifier()->m_amount || GetId() == 28832 || GetId() == 28833 || GetId() == 28834 || GetId() == 28835)
                 {
                     aur->ApplyModifier(false, true);
                     aur->GetModifier()->m_amount = amount;
@@ -9004,13 +9127,36 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                         return;
                     break;
                 }
+                case 29865:                                 // Deathbloom (10 man)
+                {
+                    if (!apply && m_removeMode == AURA_REMOVE_BY_EXPIRE)
+                    {
+                        cast_at_remove = true;
+                        spellId1 = 55594;
+                    }
+                    else
+                        return;
+                    break;
+                }
+                case 55053:                                 // Deathbloom (25 man)
+                {
+                    if (!apply && m_removeMode == AURA_REMOVE_BY_EXPIRE)
+                    {
+                        cast_at_remove = true;
+                        spellId1 = 55601;
+                    }
+                    else
+                        return;
+                    break;
+                } 
+                case 70879:
                 case 70867:                                 // Soul of Blood Qween
                 case 71473:
                 case 71532:
                 case 71533:
                 {
-                    spellId1 = 70871;
-                    break;
+                     spellId1 = 70871;
+                     break;
                 }
                 case 71905:                                 // Soul Fragment
                 {
@@ -9160,6 +9306,16 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                 spellId1 = 30069;                           // Blood Frenzy (Rank 1)
                 spellId2 = 30070;                           // Blood Frenzy (Rank 2)
             }
+            else
+            {
+                // Bloodrage & Item - Warrior T10 Protection 4P Bonus
+                if (GetId() == 29131 && m_target->HasAura(70844))
+                {
+                    int32 bp = int32(m_target->GetMaxHealth() * 20 / 100);
+                    m_target->CastCustomSpell(m_target, 70845, &bp, NULL, NULL, true, NULL);
+                    return;
+                }
+            }
             break;
         }
         case SPELLFAMILY_WARLOCK:
@@ -9299,6 +9455,9 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
             // Barkskin
             if (GetId()==22812 && m_target->HasAura(63057)) // Glyph of Barkskin
                 spellId1 = 63058;                           // Glyph - Barkskin 01
+            // Item - Druid T10 Feral 4P Bonus
+            else if (GetId() == 5229 && m_target->HasAura(70726)) // Enrage
+                spellId1 = 70725;
             else
                 return;
             break;
@@ -9459,6 +9618,11 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                         m_player->SetDeathState(GHOULED);
                         m_player->SetHealth(1);
                         m_player->SetMovement(MOVE_ROOT);
+						
+/*                        WorldPacket data(SMSG_PRE_RESURRECT, m_player->GetPackGUID().size());
+                        data << m_player->GetPackGUID();
+                        m_player->GetSession()->SendPacket(&data);
+*/
                     }
                     else
                     {

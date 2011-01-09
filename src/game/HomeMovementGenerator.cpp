@@ -49,9 +49,16 @@ HomeMovementGenerator<Creature>::_setTargetLocation(Creature & owner)
         owner.GetRespawnCoord(x, y, z);
 
     CreatureTraveller traveller(owner);
+    i_destinationHolder.SetDestination(traveller, x, y, z, false);
 
-    uint32 travel_time = i_destinationHolder.SetDestination(traveller, x, y, z);
-    modifyTravelTime(travel_time);
+    PathInfo path(&owner, x, y, z);
+    PointPath pointPath = path.getFullPath();
+
+    float speed = traveller.Speed() * 0.001f; // in ms
+    uint32 traveltime = uint32(pointPath.GetTotalLength() / speed);
+    modifyTravelTime(traveltime);
+
+    owner.SendMonsterMoveByPath(pointPath, 1, pointPath.size(), owner.GetSplineFlags(), traveltime);
     owner.clearUnitState(UNIT_STAT_ALL_STATE);
 }
 
@@ -59,13 +66,14 @@ bool
 HomeMovementGenerator<Creature>::Update(Creature &owner, const uint32& time_diff)
 {
     CreatureTraveller traveller( owner);
+
     if (i_destinationHolder.UpdateTraveller(traveller, time_diff, false))
     {
         if (!IsActive(owner))                               // force stop processing (movement can move out active zone with cleanup movegens list)
             return true;                                    // not expire now, but already lost
     }
 
-    if (time_diff > i_travel_timer)
+    if (time_diff > i_travel_time)
     {
         owner.AddSplineFlag(SPLINEFLAG_WALKMODE);
 
@@ -85,7 +93,7 @@ HomeMovementGenerator<Creature>::Update(Creature &owner, const uint32& time_diff
         return false;
     }
 
-    i_travel_timer -= time_diff;
+    i_travel_time -= time_diff;
 
     return true;
 }

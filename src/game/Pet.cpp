@@ -27,6 +27,7 @@
 #include "CreatureAI.h"
 #include "Unit.h"
 #include "Util.h"
+#include "Totem.h"
 
 Pet::Pet(PetType type) :
 Creature(CREATURE_SUBTYPE_PET),
@@ -915,6 +916,7 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
                 else
                     scale = cFamily->minScale + float(getLevel() - cFamily->minScaleLevel) / cFamily->maxScaleLevel * (cFamily->maxScale - cFamily->minScale);
 
+				scale = (scale + sWorld.getConfig(CONFIG_UINT32_BASE_PET_SCALE));
                 SetObjectScale(scale);
                 UpdateModelData();
             }
@@ -1163,7 +1165,7 @@ void Pet::_SaveSpells()
                 CharacterDatabase.PExecute("INSERT INTO pet_spell (guid,spell,active) VALUES ('%u', '%u', '%u')", m_charmInfo->GetPetNumber(), itr->first, itr->second.active);
                 break;
             case PETSPELL_NEW:
-                CharacterDatabase.PExecute("INSERT INTO pet_spell (guid,spell,active) VALUES ('%u', '%u', '%u')", m_charmInfo->GetPetNumber(), itr->first, itr->second.active);
+                CharacterDatabase.PExecute("REPLACE INTO pet_spell (guid,spell,active) VALUES ('%u', '%u', '%u')", m_charmInfo->GetPetNumber(), itr->first, itr->second.active);
                 break;
             case PETSPELL_UNCHANGED:
                 continue;
@@ -2121,6 +2123,19 @@ void Pet::ApplyStatScalingBonus(Stats stat, bool apply)
     m_baseBonusData->statScale[stat] = newStat;
 
     int32 basePoints = int32(m_baseBonusData->statScale[stat] * (CalculateScalingData()->statScale[stat] / 100.0f));
+    
+    if(stat == STAT_STAMINA)
+    {
+        PetSpellMap::const_iterator itr = m_spells.find(62758);    //Wild Hunt rank 1
+        if (itr == m_spells.end())
+            itr = m_spells.find(62762);                            //Wild Hunt rank 2
+
+        if (itr != m_spells.end())                                 // If pet has Wild Hunt
+        {
+            SpellEntry const* sProto = sSpellStore.LookupEntry(itr->first); // Then get the SpellProto and add the dummy effect value
+            basePoints += basePoints * sProto->CalculateSimpleValue(EFFECT_INDEX_0) / 100;
+        }
+    }
 
     bool needRecalculateStat = false;
 
@@ -2283,7 +2298,19 @@ void Pet::ApplyAttackPowerScalingBonus(bool apply)
             break;
         }
         case HUNTER_PET:
+        {
             newAPBonus = owner->GetTotalAttackPowerValue(RANGED_ATTACK);
+            
+            PetSpellMap::const_iterator itr = m_spells.find(62758);    //Wild Hunt rank 1
+            if (itr == m_spells.end())
+                itr = m_spells.find(62762);                            //Wild Hunt rank 2
+
+            if (itr != m_spells.end())                                 // If pet has Wild Hunt
+            {
+                SpellEntry const* sProto = sSpellStore.LookupEntry(itr->first); // Then get the SpellProto and add the dummy effect value
+                newAPBonus += newAPBonus * sProto->CalculateSimpleValue(EFFECT_INDEX_1) / 100;
+            }
+        }
             break;
         default:
             newAPBonus = 0;
@@ -2805,7 +2832,7 @@ bool Pet::Summon()
             SetUInt32Value(UNIT_FIELD_FLAGS, 0);
             SetUInt32Value(UNIT_FIELD_BYTES_1, 0);
             SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
-//            SetName("");
+//            SetName("");           
             SetNeedSave(false);
             owner->AddGuardian(this);
             break;
@@ -2818,7 +2845,7 @@ bool Pet::Summon()
             SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
             SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, 0);
             SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, 1000);
-//            SetName("");
+//            SetName(new_name);
             SetNeedSave(true);
             owner->SetPet(this);
             break;
@@ -3089,7 +3116,7 @@ PetScalingData* Pet::CalculateScalingData(bool recalculate)
 // diff contains the time in milliseconds since last regen.
 void Pet::Regenerate(Powers power, uint32 diff)
 {
-    int32 curValue = GetPower(power);
+    uint32 curValue = GetPower(power);
     uint32 maxValue = GetMaxPower(power);
 
     float addvalue = 0.0f;

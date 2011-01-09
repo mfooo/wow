@@ -78,6 +78,11 @@ bool GOHello_default(Player* /*player*/, GameObject* /*_GO*/ )
     return false;
 }
 
+bool GOUse_default(Player* /*player*/, GameObject* /*_GO*/ )  // not to sure but it seem like this should be here
+{
+    return false;
+}
+
 bool GOQuestAccept_default(Player* /*player*/, GameObject* /*_GO*/, Quest const* /*_Quest*/ )
 {
     return false;

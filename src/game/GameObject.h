@@ -656,7 +656,9 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         void SetGoArtKit(uint8 artkit) { SetByteValue(GAMEOBJECT_BYTES_1, 2, artkit); }
         uint8 GetGoAnimProgress() const { return GetByteValue(GAMEOBJECT_BYTES_1, 3); }
         void SetGoAnimProgress(uint8 animprogress) { SetByteValue(GAMEOBJECT_BYTES_1, 3, animprogress); }
-
+        uint32 GetDisplayId() const { return GetUInt32Value(GAMEOBJECT_DISPLAYID); }
+        void SetDisplayId(uint32 modelId) { SetUInt32Value(GAMEOBJECT_DISPLAYID, modelId); }
+		
         float GetObjectBoundingRadius() const;              // overwrite WorldObject version
 
         void Use(Unit* user);

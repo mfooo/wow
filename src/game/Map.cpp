@@ -204,13 +204,13 @@ void Map::AddNotifier(T* , Cell const& , CellPair const& )
 template<>
 void Map::AddNotifier(Player* obj, Cell const& cell, CellPair const& cellpair)
 {
-    PlayerRelocationNotify(obj,cell,cellpair);
+    obj->SheduleAINotify(0);
 }
 
 template<>
 void Map::AddNotifier(Creature* obj, Cell const&, CellPair const&)
 {
-    obj->SetNeedNotify();
+    obj->SheduleAINotify(0);
 }
 
 void
@@ -268,7 +268,7 @@ bool Map::EnsureGridLoaded(const Cell &cell)
     EnsureGridCreated(GridPair(cell.GridX(), cell.GridY()));
     NGridType *grid = getNGrid(cell.GridX(), cell.GridY());
 
-    MANGOS_ASSERT(grid != NULL);
+    //MANGOS_ASSERT(grid != NULL);
     if( !isGridObjectDataLoaded(cell.GridX(), cell.GridY()) )
     {
         //it's important to set it loaded before loading!
@@ -619,7 +619,7 @@ void Map::Remove(Player *player, bool remove)
     SendRemoveTransports(player);
     UpdateObjectVisibility(player,cell,p);
 
-    player->ResetMap();
+    // player->ResetMap();
     if( remove )
         DeleteFromWorld(player);
 }
@@ -664,6 +664,28 @@ Map::Remove(T *obj, bool remove)
     }
 }
 
+float  Map::relocation_lower_limit_sq   = 10.f * 10.f;
+uint32 Map::relocation_ai_notify_delay  = 1000u;
+
+inline void _F_optimized(Unit & u)
+{
+    float dx = u.m_last_notified_position.x - u.GetPositionX();
+    float dy = u.m_last_notified_position.y - u.GetPositionY();
+    float dz = u.m_last_notified_position.z - u.GetPositionZ();
+    float distsq = dx*dx+dy*dy+dz*dz;
+
+    if (distsq > Map::relocation_lower_limit_sq)
+    {
+        u.m_last_notified_position.x = u.GetPositionX();
+        u.m_last_notified_position.y = u.GetPositionY();
+        u.m_last_notified_position.z = u.GetPositionZ();
+
+        u.SheduleVisibilityUpdate();
+    }
+
+    u.SheduleAINotify(Map::relocation_ai_notify_delay);
+}
+
 void
 Map::PlayerRelocation(Player *player, float x, float y, float z, float orientation)
 {
@@ -692,11 +714,15 @@ Map::PlayerRelocation(Player *player, float x, float y, float z, float orientati
         NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
         player->GetViewPoint().Event_GridChanged(&(*newGrid)(new_cell.CellX(),new_cell.CellY()));
     }
+    
+    // FG: attempt to use less CPU, reduce calling interval of CPU-intensive grid search to min. 500 ms
+	uint32 timems = WorldTimer::getMSTime();
+	if(WorldTimer::getMSTimeDiff(player->m_grid_update_timer, timems) >= 500)
+	    player->m_grid_update_timer = timems;
+	   else
+        return;
 
-    player->GetViewPoint().Call_UpdateVisibilityForOwner();
-    // if move then update what player see and who seen
-    UpdateObjectVisibility(player, new_cell, new_val);
-    PlayerRelocationNotify(player,new_cell,new_val);
+    _F_optimized(*player);
 
     NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
     if( !same_cell && newGrid->GetGridState()!= GRID_STATE_ACTIVE )
@@ -716,39 +742,22 @@ Map::CreatureRelocation(Creature *creature, float x, float y, float z, float ang
     CellPair new_val = MaNGOS::ComputeCellPair(x, y);
     Cell new_cell(new_val);
 
-    // delay creature move for grid/cell to grid/cell moves
+    bool moved_to_resp = false;
     if (old_cell.DiffCell(new_cell) || old_cell.DiffGrid(new_cell))
     {
         DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) added to moving list from grid[%u,%u]cell[%u,%u] to grid[%u,%u]cell[%u,%u].", creature->GetGUIDLow(), creature->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
 
-        // do move or do move to respawn or remove creature if previous all fail
-        if(CreatureCellRelocation(creature,new_cell))
+        // try to move to the new cell or move it to respawn -- do nothing if both operations failed
+        if (!CreatureCellRelocation(creature,new_cell) && !(moved_to_resp = CreatureRespawnRelocation(creature)))
         {
-            // update pos
-            creature->Relocate(x, y, z, ang);
-
-            // in diffcell/diffgrid case notifiers called in Creature::Update
-            creature->SetNeedNotify();
-        }
-        else
-        {
-            // if creature can't be move in new cell/grid (not loaded) move it to repawn cell/grid
-            // creature coordinates will be updated and notifiers send
-            if(!CreatureRespawnRelocation(creature))
-            {
-                // ... or unload (if respawn grid also not loaded)
-                DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u ) can't be move to unloaded respawn grid.",creature->GetGUIDLow(),creature->GetEntry());
-                creature->SetNeedNotify();
-            }
+             DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u ) can't be move to unloaded respawn grid.",creature->GetGUIDLow(),creature->GetEntry());
+            return;
         }
     }
-    else
-    {
+    if (!moved_to_resp)
         creature->Relocate(x, y, z, ang);
-        creature->SetNeedNotify();
-    }
-
-    creature->GetViewPoint().Call_UpdateVisibilityForOwner();
+		
+    _F_optimized(*creature);
     MANGOS_ASSERT(CheckGridIntegrity(creature,true));
 }
 
@@ -832,7 +841,6 @@ bool Map::CreatureRespawnRelocation(Creature *c)
     {
         c->Relocate(resp_x, resp_y, resp_z, resp_o);
         c->GetMotionMaster()->Initialize();                 // prevent possible problems with default move generators
-        c->SetNeedNotify();
         return true;
     }
     else
@@ -2977,7 +2985,26 @@ void Map::SendObjectUpdates()
     {
         Object* obj = *i_objectsToClientUpdate.begin();
         i_objectsToClientUpdate.erase(i_objectsToClientUpdate.begin());
-        obj->BuildUpdateData(update_players);
+        if (obj && obj->IsInWorld())
+        {
+            switch(obj->GetTypeId())
+            {
+                case TYPEID_ITEM:
+                case TYPEID_CONTAINER:
+                    ((Item*)obj)->BuildUpdateData(update_players);
+                    break;
+                case TYPEID_PLAYER:
+                    if(!(obj->GetGUIDLow() != 0 && sObjectMgr.GetPlayer(obj->GetObjectGuid())))
+                       break;
+                case TYPEID_UNIT:
+                case TYPEID_GAMEOBJECT:
+                case TYPEID_DYNAMICOBJECT:
+                case TYPEID_CORPSE:
+                    ((WorldObject*)obj)->BuildUpdateData(update_players);
+                    break;
+                default: break;
+            }
+        }
     }
 
     WorldPacket packet;                                     // here we allocate a std::vector with a size of 0x10000

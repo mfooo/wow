@@ -46,6 +46,7 @@
 #include "CellImpl.h"
 #include "Path.h"
 #include "Traveller.h"
+#include "PathFinder.h"
 #include "Vehicle.h"
 #include "VMapFactory.h"
 #include "MovementGenerator.h"
@@ -220,6 +221,11 @@ Unit::Unit()
     m_AuraFlags = 0;
 
     m_Visibility = VISIBILITY_ON;
+	
+    m_notify_sheduled = 0;
+    m_last_notified_position.x = 0;
+    m_last_notified_position.y = 0;
+    m_last_notified_position.z = 0;
 
     m_detectInvisibilityMask = 0;
     m_invisibilityMask = 0;
@@ -321,8 +327,15 @@ void Unit::Update( uint32 update_diff, uint32 p_time )
     // WARNING! Order of execution here is important, do not change.
     // Spells must be processed with event system BEFORE they go to _UpdateSpells.
     // Or else we may have some SPELL_STATE_FINISHED spells stalled in pointers, that is bad.
+
+    sWorld.m_spellUpdateLock.acquire();
     m_Events.Update( update_diff );
-    _UpdateSpells( update_diff );
+
+    if(!IsInWorld())
+        return;
+
+    _UpdateSpells(update_diff );
+    sWorld.m_spellUpdateLock.release();
 
     CleanupDeletedAuras();
 
@@ -583,6 +596,14 @@ void Unit::SendHeartBeat(bool toSelf)
     SendMessageToSet(&data, toSelf);
 }
 
+void Unit::BuildHeartBeatMsg(WorldPacket *data) const 
+{ 
+    data->Initialize(MSG_MOVE_HEARTBEAT); 
+    *data << GetPackGUID(); 
+    m_movementInfo.Write(*data); 
+} 
+
+
 void Unit::resetAttackTimer(WeaponAttackType type)
 {
     m_attackTimer[type] = uint32(GetAttackTime(type) * m_modAttackSpeedPct[type]);
@@ -620,6 +641,26 @@ void Unit::RemoveSpellsCausingAura(AuraType auraType, SpellAuraHolder* except)
         RemoveAurasDueToSpell((*iter)->GetId(), except);
         iter = m_modAuras[auraType].begin();
     }
+}
+
+Aura* Unit::GetAura(AuraType type, uint32 family, uint32 spellIconID, SpellEffectIndex effindex, uint64 casterGUID)
+{
+    AuraList const& auras = GetAurasByType(type);
+
+    for(AuraList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
+    {
+        SpellEntry const* spellProto = (*itr)->GetSpellProto();
+
+        if (spellProto->SpellFamilyName == family && spellProto->SpellIconID == spellIconID && (*itr)->GetEffIndex() == effindex)
+        {
+            if (casterGUID && (*itr)->GetCasterGUID() != casterGUID)
+                continue;
+
+            return *itr;
+        }
+    }
+
+    return NULL;
 }
 
 bool Unit::HasAuraType(AuraType auraType) const
@@ -915,6 +956,18 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         if(player_tap && player_tap != pVictim)
         {
             player_tap->ProcDamageAndSpell(pVictim, PROC_FLAG_KILL, PROC_FLAG_KILLED, PROC_EX_NONE, 0);
+			
+            // PvP Token
+            int8 leveldiff = player_tap->getLevel() - pVictim->getLevel();
+            if((pVictim->GetTypeId() == TYPEID_PLAYER) && leveldiff < 10)
+                player_tap->ReceiveToken();
+				
+            // PvP Announcer
+            if (sWorld.getConfig(CONFIG_BOOL_PVP_ANNOUNCER))
+            {
+                if (pVictim->GetTypeId() == TYPEID_PLAYER)
+                    sWorld.SendPvPAnnounce(player_tap, ((Player*)pVictim));
+            }
 
             WorldPacket data(SMSG_PARTYKILLLOG, (8+8));     //send event PARTY_KILL
             data << player_tap->GetObjectGuid();            //player with killing blow
@@ -1343,9 +1396,16 @@ void Unit::CastSpell(Unit* Victim, SpellEntry const *spellInfo, bool triggered, 
     if (triggeredByAura)
     {
         if(originalCaster.IsEmpty())
-            originalCaster = triggeredByAura->GetCasterGuid();
-
-        triggeredBy = triggeredByAura->GetSpellProto();
+            if (triggeredByAura->GetHolder())
+            {
+                originalCaster = triggeredByAura->GetCasterGuid();
+                triggeredBy    = triggeredByAura->GetSpellProto();
+            }
+            else
+            {
+                sLog.outError("CastCustomSpell: spell %d by caster: %s triggered by aura without original caster and spellholder (CRUSH THERE!)", spellInfo->Id, GetObjectGuid().GetString().c_str());
+                return;
+            }
     }
 
     Spell *spell = new Spell(this, spellInfo, triggered, originalCaster, triggeredBy);
@@ -1392,16 +1452,9 @@ void Unit::CastCustomSpell(Unit* Victim, SpellEntry const *spellInfo, int32 cons
     if (triggeredByAura)
     {
         if(originalCaster.IsEmpty())
-            if (triggeredByAura->GetHolder())
-            {
-                originalCaster = triggeredByAura->GetCasterGuid();
-                triggeredBy    = triggeredByAura->GetSpellProto();
-            }
-            else
-            {
-                sLog.outError("CastCustomSpell: spell %d by caster: %s triggered by aura without original caster and spellholder (CRUSH THERE!)", spellInfo->Id, GetObjectGuid().GetString().c_str());
-                return;
-            }
+            originalCaster = triggeredByAura->GetCasterGuid();
+
+        triggeredBy = triggeredByAura->GetSpellProto();
     }
 
     Spell *spell = new Spell(this, spellInfo, triggered, originalCaster, triggeredBy);
@@ -2813,13 +2866,29 @@ void Unit::CalculateHealAbsorb(const uint32 heal, uint32 *absorb)
 
 void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool extra )
 {
-    if(hasUnitState(UNIT_STAT_CAN_NOT_REACT) || HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED) )
-        return;
+    if (hasUnitState(UNIT_STAT_CAN_NOT_REACT) || HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))
+    {
+        bool bAllowMeleeAttack = false;
+       
+        VehicleKit* pVehicle = GetVehicle();
+        if (pVehicle)
+        {
+            Unit* pVehicleUnit = pVehicle->GetBase();
+            uint32 uiEntry = 0;
+            if (pVehicleUnit)
+                uiEntry = pVehicleUnit->GetEntry();
+            if (uiEntry == 30248)
+                bAllowMeleeAttack = true;
+        }
+ 
+        if (!bAllowMeleeAttack)
+            return;
+    }
 
     if (!pVictim->isAlive())
         return;
 
-    if(IsNonMeleeSpellCasted(false))
+    if (IsNonMeleeSpellCasted(false))
         return;
 
     uint32 hitInfo;
@@ -2873,7 +2942,7 @@ void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool ex
         ((Creature*)pVictim)->AI()->AttackedBy(this);
 
     // extra attack only at any non extra attack (normal case)
-    if(!extra && extraAttacks)
+    if (!extra && extraAttacks)
     {
         while(m_extraAttacks)
         {
@@ -2907,7 +2976,7 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(const Unit *pVictim, WeaponAttackT
 
 MeleeHitOutcome Unit::RollMeleeOutcomeAgainst (const Unit *pVictim, WeaponAttackType attType, int32 crit_chance, int32 miss_chance, int32 dodge_chance, int32 parry_chance, int32 block_chance) const
 {
-    if(pVictim->GetTypeId()==TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode())
+    if (pVictim->GetTypeId()==TYPEID_UNIT && ((Creature*)pVictim)->IsInEvadeMode())
         return MELEE_HIT_EVADE;
 
     int32 attackerMaxSkillValueForLevel = GetMaxSkillValueForLevel(pVictim);
@@ -2993,7 +3062,7 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst (const Unit *pVictim, WeaponAttack
     }
 
     // Max 40% chance to score a glancing blow against mobs that are higher level (can do only players and pets and not with ranged weapon)
-    if( attType != RANGED_ATTACK &&
+    if ( attType != RANGED_ATTACK &&
         (GetTypeId() == TYPEID_PLAYER || ((Creature*)this)->IsPet()) &&
         pVictim->GetTypeId() != TYPEID_PLAYER && !((Creature*)pVictim)->IsPet() &&
         getLevel() < pVictim->GetLevelForTarget(this) )
@@ -4311,6 +4380,13 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder *holder)
         delete holder;
         return false;
     }
+	
+    // Strength of the Pack must affect only Sanctum Sentries and exclude caster too (Auriaya encounter, Ulduar)
+   if (holder->GetId() == 64381 && (this->GetEntry() != 34014 || this->GetGUID() == holder->GetCasterGUID()))
+   {
+       delete holder;
+       return false;
+   }
 
     // passive and persistent auras can stack with themselves any number of times
     if ((!holder->IsPassive() && !holder->IsPersistent()) || holder->IsAreaAura())
@@ -4377,6 +4453,10 @@ bool Unit::AddSpellAuraHolder(SpellAuraHolder *holder)
 
                 // m_auraname can be modified to SPELL_AURA_NONE for area auras, use original
                 AuraType aurNameReal = AuraType(aurSpellInfo->EffectApplyAuraName[i]);
+				
+				// Strength of the Pack must stuck from different casters (Auriaya encounter, Ulduar)
+                if (foundHolder->GetId() == 64381)
+                    continue;
 
                 switch(aurNameReal)
                 {
@@ -6222,7 +6302,7 @@ Pet* Unit::GetPet() const
     {
         if (IsInWorld())
         {
-            if (Pet* pet = GetMap()->GetPet(pet_guid))
+            if (Pet* pet = GetMapSafe()->GetPet(pet_guid))
                 return pet;
         }
 
@@ -8009,7 +8089,7 @@ uint32 Unit::MeleeDamageBonusTaken(Unit *pCaster, uint32 pdamage,WeaponAttackTyp
         TakenPercent *= GetTotalAuraMultiplier(SPELL_AURA_MOD_RANGED_DAMAGE_TAKEN_PCT);
     else
         TakenPercent *= GetTotalAuraMultiplier(SPELL_AURA_MOD_MELEE_DAMAGE_TAKEN_PCT);
-
+		
     if (spellProto)
     {
         // ..taken pct (from caster spells)
@@ -8659,13 +8739,10 @@ void Unit::SetVisibility(UnitVisibility x)
             }
         }
 
-        Map *m = GetMap();
-
-        if(GetTypeId()==TYPEID_PLAYER)
-            m->PlayerRelocation((Player*)this,GetPositionX(),GetPositionY(),GetPositionZ(),GetOrientation());
-        else
-            m->CreatureRelocation((Creature*)this,GetPositionX(),GetPositionY(),GetPositionZ(),GetOrientation());
-
+        GetViewPoint().Call_UpdateVisibilityForOwner();
+        UpdateObjectVisibility();
+        SheduleAINotify(0);
+		
         GetViewPoint().Event_ViewPointVisibilityChanged();
     }
 }
@@ -9168,7 +9245,7 @@ void Unit::DeleteThreatList()
 
 void Unit::TauntApply(Unit* taunter)
 {
-    MANGOS_ASSERT(GetTypeId()== TYPEID_UNIT);
+    //MANGOS_ASSERT(GetTypeId()== TYPEID_UNIT);
 
     if(!taunter || (taunter->GetTypeId() == TYPEID_PLAYER && ((Player*)taunter)->isGameMaster()))
         return;
@@ -9282,6 +9359,32 @@ bool Unit::SelectHostileTarget()
         {
             SetInFront(target);
             ((Creature*)this)->AI()->AttackStart(target);
+			
+            // check if currently selected target is reachable
+            // NOTE: path alrteady generated from AttackStart()
+            if(!GetMotionMaster()->operator->()->IsReachable())
+            {
+                // remove all taunts
+                RemoveSpellsCausingAura(SPELL_AURA_MOD_TAUNT);
+
+                if(m_ThreatManager.getThreatList().size() < 2)
+                {
+                    // only one target in list, we have to evade after timer
+                    // TODO: make timer - inside Creature class
+                    ((Creature*)this)->AI()->EnterEvadeMode();
+                }
+                else
+                {
+                    // remove unreachable target from our threat list
+                    // next iteration we will select next possible target
+                    m_HostileRefManager.deleteReference(target);
+                    m_ThreatManager.modifyThreatPercent(target, -101);
+                    
+                    _removeAttacker(target);
+                }
+
+                return false;
+            }
         }
         return true;
     }
@@ -11596,6 +11699,45 @@ void Unit::MonsterJump(float x, float y, float z, float o, uint32 transitTime, u
     }
 }
 
+void Unit::MonsterMoveByPath(float x, float y, float z, uint32 speed, bool smoothPath)
+{
+    PathInfo path(this, x, y, z, !smoothPath);
+    PointPath pointPath = path.getFullPath();
+    uint32 size = pointPath.size();
+    // tiny hack for underwater charge cases
+    pointPath[size-1].x = x;
+    pointPath[size-1].y = y;
+    pointPath[size-1].z = z;
+    uint32 traveltime = uint32(pointPath.GetTotalLength()/float(speed));
+    MonsterMoveByPath(pointPath, 1, pointPath.size(), traveltime);
+}
+
+template<typename PathElem, typename PathNode>
+void Unit::MonsterMoveByPath(Path<PathElem,PathNode> const& path, uint32 start, uint32 end, uint32 transitTime)
+{
+    SplineFlags flags = GetTypeId() == TYPEID_PLAYER ? SPLINEFLAG_WALKMODE : ((Creature*)this)->GetSplineFlags();
+    SendMonsterMoveByPath(path, start, end, flags, transitTime);
+
+    if (GetTypeId() != TYPEID_PLAYER)
+    {
+        Creature* c = (Creature*)this;
+        // Creature relocation acts like instant movement generator, so current generator expects interrupt/reset calls to react properly
+        if (!c->GetMotionMaster()->empty())
+            if (MovementGenerator *movgen = c->GetMotionMaster()->top())
+                movgen->Interrupt(*c);
+
+        GetMap()->CreatureRelocation((Creature*)this, path[end-1].x, path[end-1].y, path[end-1].z, 0.0f);
+
+        // finished relocation, movegen can different from top before creature relocation,
+        // but apply Reset expected to be safe in any case
+        if (!c->GetMotionMaster()->empty())
+            if (MovementGenerator *movgen = c->GetMotionMaster()->top())
+                movgen->Reset(*c);
+    }
+}
+
+template void Unit::MonsterMoveByPath<PathNode>(const Path<PathNode> &, uint32, uint32, uint32);
+
 struct SetPvPHelper
 {
     explicit SetPvPHelper(bool _state) : state(_state) {}
@@ -11984,6 +12126,99 @@ SpellAuraHolder* Unit::GetSpellAuraHolder (uint32 spellid, uint64 casterGUID)
     return NULL;
 }
 
+void Unit::RemoveUnitFromHostileRefManager(Unit* p_unit)
+{
+   getHostileRefManager().deleteReference(p_unit);
+}
+
+class RelocationNotifyEvent : public BasicEvent
+{
+    public:
+        RelocationNotifyEvent(Unit& owner) : BasicEvent(), m_owner(owner)
+        {
+            m_owner.m_notify_sheduled |= AI_Notify_Sheduled;
+        }
+
+        bool Execute(uint64 e_time, uint32 /*p_time*/)
+        {
+            float radius = MAX_CREATURE_ATTACK_RADIUS * sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO);
+
+            if (m_owner.m_notify_sheduled & AI_Notify_Execution)
+            {
+                if (m_owner.GetTypeId() == TYPEID_PLAYER)
+                {
+                    MaNGOS::PlayerRelocationNotifier notify((Player&)m_owner);
+                    Cell::VisitAllObjects(&m_owner,notify,radius);
+                } 
+                else //if(m_owner.GetTypeId() == TYPEID_UNIT)
+                {
+                    MaNGOS::CreatureRelocationNotifier notify((Creature&)m_owner);
+                    Cell::VisitAllObjects(&m_owner,notify,radius);
+                }
+
+                m_owner.m_notify_sheduled &= ~(AI_Notify_Sheduled | AI_Notify_Execution);
+                return true;
+            }
+            else
+            {
+                m_owner.m_notify_sheduled |= AI_Notify_Execution;
+                m_owner.m_Events.AddEvent(this, e_time + 1, false);
+                return false;
+            }
+        }
+
+        void Abort(uint64)
+        {
+            m_owner.m_notify_sheduled &= ~(AI_Notify_Sheduled | AI_Notify_Execution);
+        }
+
+    private:
+        Unit& m_owner;
+};
+
+class UpdateVisibilityEvent : public BasicEvent
+{
+    public:
+        UpdateVisibilityEvent(Unit& owner) : BasicEvent(), m_owner(owner)
+        {
+            m_owner.m_notify_sheduled |= Visibility_Update_Execution;
+        }
+
+        bool Execute(uint64, uint32)
+        {
+            m_owner.GetViewPoint().Call_UpdateVisibilityForOwner();
+            m_owner.UpdateObjectVisibility();
+            m_owner.m_notify_sheduled &= ~Visibility_Update_Execution;
+            return true;
+        }
+
+        void Abort(uint64)
+        {
+            m_owner.m_notify_sheduled &= ~Visibility_Update_Execution;
+        }
+
+    private:
+        Unit& m_owner;
+};
+
+void Unit::SheduleAINotify(uint32 delay)
+{
+    if (m_notify_sheduled & AI_Notify_Sheduled)
+        return;
+
+    RelocationNotifyEvent *notify = new RelocationNotifyEvent(*this);
+    m_Events.AddEvent(notify, m_Events.CalculateTime(delay));
+}
+
+void Unit::SheduleVisibilityUpdate()
+{
+    if (m_notify_sheduled & Visibility_Update_Execution)
+        return;
+
+    UpdateVisibilityEvent *notify = new UpdateVisibilityEvent(*this);
+    m_Events.AddEvent(notify, m_Events.CalculateTime(0));
+}
+
 void Unit::_AddAura(uint32 spellID, uint32 duration)
 {
     SpellEntry const *spellInfo = sSpellStore.LookupEntry( spellID );
@@ -12012,6 +12247,70 @@ void Unit::_AddAura(uint32 spellID, uint32 duration)
         }
     }
 }
+
+template<typename Elem, typename Node>
+void Unit::SendMonsterMoveByPath(Path<Elem,Node> const& path, uint32 start, uint32 end, SplineFlags flags, uint32 traveltime)
+{
+    uint32 pathSize = end - start;
+
+    if (pathSize < 1)
+    {
+        SendMonsterMove(GetPositionX(), GetPositionY(), GetPositionZ(), SPLINETYPE_STOP, flags, 0);
+        return;
+    }
+
+    if (pathSize == 1)
+    {
+        SendMonsterMove(path[start].x, path[start].y, path[start].z, SPLINETYPE_NORMAL, flags, traveltime);
+        return;
+    }
+
+    uint32 packSize = (flags & SplineFlags(SPLINEFLAG_FLYING | SPLINEFLAG_CATMULLROM)) ? pathSize*4*3 : 4*3 + (pathSize-1)*4;
+    WorldPacket data( SMSG_MONSTER_MOVE, (GetPackGUID().size()+1+4+4+4+4+1+4+4+4+packSize) );
+    data << GetPackGUID();
+    data << uint8(0);
+    data << GetPositionX();
+    data << GetPositionY();
+    data << GetPositionZ();
+    data << uint32(WorldTimer::getMSTime());
+    data << uint8(SPLINETYPE_NORMAL);
+    data << uint32(flags);
+    data << uint32(traveltime);
+    data << uint32(pathSize);
+
+    if (flags & SplineFlags(SPLINEFLAG_FLYING | SPLINEFLAG_CATMULLROM))
+    {
+        // sending a taxi flight path
+        for (uint32 i = start; i < end; ++i)
+        {
+            data << float(path[i].x);
+            data << float(path[i].y);
+            data << float(path[i].z);
+        }
+    }
+    else
+    {
+        // sending a series of points
+
+        // destination
+        data << path[end-1].x;
+        data << path[end-1].y;
+        data << path[end-1].z;
+
+        // all other points are relative to the center of the path
+        float mid_X = (GetPositionX() + path[end-1].x) * 0.5f;
+        float mid_Y = (GetPositionY() + path[end-1].y) * 0.5f;
+        float mid_Z = (GetPositionZ() + path[end-1].z) * 0.5f;
+
+        for (uint32 i = start; i < end - 1; ++i)
+            data.appendPackXYZ(mid_X - path[i].x, mid_Y - path[i].y, mid_Z - path[i].z);
+    }
+
+    SendMessageToSet(&data, true);
+}
+
+template void Unit::SendMonsterMoveByPath<PathNode>(const Path<PathNode> &, uint32, uint32, SplineFlags, uint32);
+template void Unit::SendMonsterMoveByPath<TaxiPathNodePtr, const TaxiPathNodeEntry>(const Path<TaxiPathNodePtr, const TaxiPathNodeEntry> &, uint32, uint32, SplineFlags, uint32);
 
 bool Unit::IsAllowedDamageInArea(Unit* pVictim) const
 {

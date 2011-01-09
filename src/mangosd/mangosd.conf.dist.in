@@ -54,9 +54,9 @@ ConfVersion=2010100901
 RealmID = 1
 DataDir = "."
 LogsDir = ""
-LoginDatabaseInfo     = "127.0.0.1;3306;mangos;mangos;realmd"
-WorldDatabaseInfo     = "127.0.0.1;3306;mangos;mangos;mangos"
-CharacterDatabaseInfo = "127.0.0.1;3306;mangos;mangos;characters"
+LoginDatabaseInfo     = "127.0.0.1;3306;root;ascent;realmd"
+WorldDatabaseInfo     = "127.0.0.1;3306;root;ascent;mangos"
+CharacterDatabaseInfo = "127.0.0.1;3306;root;ascent;characters"
 MaxPingTime = 30
 WorldServerPort = 8085
 BindIP = "0.0.0.0"
@@ -129,7 +129,7 @@ BindIP = "0.0.0.0"
 #
 #    vmap.enableLOS
 #    vmap.enableHeight
-#        Enable/Disable VMmap support for line of sight and height calculation
+#        Enable/Disable vmap support for line of sight and height calculation
 #        Default: 0 (disable)
 #                 1 (enable)
 #
@@ -155,6 +155,15 @@ BindIP = "0.0.0.0"
 #        after that new target movmeent point calculated. Max: melee attack range (5), min: contact range (0.5)
 #        More distance let have better performence, less distance let have more sensitive reaction at target move.
 #        Default: 1.5
+#
+#    mmap.enabled
+#        Enable/Disable pathfinding using mmaps
+#        Default: 1 (enable)
+#                 0 (disable)
+#
+#    mmap.ignoreMapIds
+#        Disable mmap pathfinding on the listed maps.
+#        List of map ids with delimiter ','
 #
 #    UpdateUptimeInterval
 #        Update realm uptime period in minutes (for save data in 'uptime' table). Must be > 0
@@ -202,6 +211,8 @@ vmap.ignoreSpellIds = "7720"
 vmap.enableIndoorCheck = 1
 DetectPosCollision = 1
 TargetPosRecalculateRange = 1.5
+mmap.enabled = 1
+mmap.ignoreMapIds = ""
 UpdateUptimeInterval = 10
 MaxCoreStuckTime = 0
 AddonChannel = 1
@@ -361,22 +372,85 @@ GmLogFile = ""
 GmLogTimestamp = 0
 GmLogPerAccount = 0
 RaLogFile = ""
-LogColors = ""
+LogColors = "13 7 11 9"
 
-# Chat log parameters
+###################################################################################################################
+#   LEXICS CUTTER SYSTEM
+#
+#    Chat log parameters
+#        ChatLogEnable = 0
+#
+#    If this is enabled, all $d in file names are replaced with current date
+#    This does include innormative lexics log
+#        ChatLogDateSplit = 1
+#    If this is enabled, UTF8 header is written into new files
+#        ChatLogUTFHeader = 1
+#    If this is enabled, chat log will ignore messages with unprintable chars
+#        ChatLogIgnoreUnprintable = 1
+#
+#    Chat log files
+#        ChatLogChatFile = main_chat-$d.log
+#        ChatLogPartyFile = party_chat-$d.log
+#        ChatLogGuildFile = guild_chat-$d.log
+#        ChatLogWhisperFile = whisper_chat-$d.log
+#        ChatLogChannelFile = channel_chat-$d.log
+#        ChatLogRaidFile = raid_chat-$d.log
+#        ChatLogBattleGroundFile = bg_chat-$d.log
+#
+#    Chat log screen logging
+#        ChatLogChatScreen = 0
+#        ChatLogPartyScreen = 0
+#        ChatLogGuildScreen = 0
+#        ChatLogWhisperScreen = 0
+#        ChatLogChannelScreen = 0
+#        ChatLogRaidScreen = 0
+#        ChatLogBattleGroundScreen = 0
+#
+#    Lexics cutter parameters
+#        LexicsCutterEnable = 1
+#        LexicsCutterInnormativeCut = 1
+#        LexicsCutterCutReplacement = &!@^%!^&*!!!
+#        LexicsCutterLogFile = innormative-$d.log
+#        LexicsCutterScreenLog = 0
+#        LexicsCutterAnalogsFile = letter_analogs.txt
+#        LexicsCutterWordsFile = innormative_words.txt
+#
+#    Where to cut lexics
+#        LexicsCutInChat = 1
+#        LexicsCutInParty = 1
+#        LexicsCutInGuild = 1
+#        LexicsCutInWhisper = 1
+#        LexicsCutInChannel = 1
+#        LexicsCutInRaid = 1
+#        LexicsCutInBattleGround = 1
+#
+#    Ignore word spaces like: W O R D
+#        LexicsCutterIgnoreSpaces = 1
+#
+#    Ignore repeats like: WWOOOORRRRRD
+#        LexicsCutterIgnoreRepeats = 1
+#
+#    Action:
+#    ---   0: log only
+#    ---   1: sheep
+#    ---   2: stun
+#    ---   3: kill
+#    ---   4: leave 5 health
+#    ---   5: disable chat
+#    ---   6: stuck (works as stun + 50% health)
+#    ---   7: resurrection sickness
+#    ---   8: shear
+#        LexicsCutterAction = 0
+#        LexicsCutterActionDuration = 60000
+#
+#     Do not perform action on GM if this is enabled
+#        LexicsCutterNoActionOnGM = 1
+###################################################################################################################
+
 ChatLogEnable = 0
-
-# If this is enabled, all $d in file names are replaced with current date
-# This does include innormative lexics log
 ChatLogDateSplit = 1
-
-# If this is enabled, UTF8 header is written into new files
 ChatLogUTFHeader = 1
-
-# If this is enabled, chat log will ignore messages with unprintable chars
 ChatLogIgnoreUnprintable = 1
-
-# Chat log files
 ChatLogChatFile = main_chat-$d.log
 ChatLogPartyFile = party_chat-$d.log
 ChatLogGuildFile = guild_chat-$d.log
@@ -384,8 +458,6 @@ ChatLogWhisperFile = whisper_chat-$d.log
 ChatLogChannelFile = channel_chat-$d.log
 ChatLogRaidFile = raid_chat-$d.log
 ChatLogBattleGroundFile = bg_chat-$d.log
-
-# Chat log screen logging
 ChatLogChatScreen = 0
 ChatLogPartyScreen = 0
 ChatLogGuildScreen = 0
@@ -393,18 +465,13 @@ ChatLogWhisperScreen = 0
 ChatLogChannelScreen = 0
 ChatLogRaidScreen = 0
 ChatLogBattleGroundScreen = 0
-
-# Lexics cutter parameters
 LexicsCutterEnable = 1
-
 LexicsCutterInnormativeCut = 1
 LexicsCutterCutReplacement = &!@^%!^&*!!!
 LexicsCutterLogFile = innormative-$d.log
 LexicsCutterScreenLog = 0
 LexicsCutterAnalogsFile = letter_analogs.txt
 LexicsCutterWordsFile = innormative_words.txt
-
-# Where to cut lexics
 LexicsCutInChat = 1
 LexicsCutInParty = 1
 LexicsCutInGuild = 1
@@ -412,27 +479,10 @@ LexicsCutInWhisper = 1
 LexicsCutInChannel = 1
 LexicsCutInRaid = 1
 LexicsCutInBattleGround = 1
-
-# Ignore word spaces like: W O R D
 LexicsCutterIgnoreSpaces = 1
-
-# Ignore repeats like: WWOOOORRRRRD
 LexicsCutterIgnoreRepeats = 1
-
-# --- Action:
-# ---   0: log only
-# ---   1: sheep
-# ---   2: stun
-# ---   3: kill
-# ---   4: leave 5 health
-# ---   5: disable chat
-# ---   6: stuck (works as stun + 50% health)
-# ---   7: resurrection sickness
-# ---   8: shear
 LexicsCutterAction = 0
 LexicsCutterActionDuration = 60000
-
-# Do not perform action on GM if this is enabled
 LexicsCutterNoActionOnGM = 1
 
 ###################################################################################################################
@@ -1233,6 +1283,14 @@ GM.AllowAchievementGain  = 1
 #        Visibility grey distance for dynobjects/gameobjects/corpses/creature bodies
 #        Default: 10 (yards)
 #
+#    Visibility.RelocationLowerLimit
+#        Object's visibility update called, when distance between current object's position and position,
+#        where visiblity was updated last time, reaches RelocationLowerLimit value
+#        Default: 10 (yards)
+#
+#    Visibility.AIRelocationNotifyDelay
+#        Time(in milliseconds) between the creature/player relocation and the nearby creature's AI reaction
+#        Default: 1000 (milliseconds)
 #
 ###################################################################################################################
 
@@ -1242,8 +1300,11 @@ Visibility.Distance.Instances     = 120
 Visibility.Distance.BGArenas      = 180
 Visibility.Distance.Object        = 100
 Visibility.Distance.InFlight      = 100
-Visibility.Distance.Grey.Unit   = 1
-Visibility.Distance.Grey.Object = 10
+Visibility.Distance.Grey.Unit    = 1
+Visibility.Distance.Grey.Object  = 10
+
+Visibility.RelocationLowerLimit    = 10
+Visibility.AIRelocationNotifyDelay = 1000
 
 ###################################################################################################################
 # SERVER RATES
@@ -1545,6 +1606,16 @@ BattleGround.Random.ResetHour = 6
 #        Default Personal Rating at team creation
 #        Default: -1 (use season dependent default value)
 #
+#    Arena.LoserNoChange
+#        If winner or loser rating is below this limit, loser loses no rating
+#        Default: 0 (disable)
+#                 1400
+#
+#    Arena.LoserHalfChange
+#        If loser rating is below this limit, he loses half of rating
+#        Default: 0 (disable)
+#                 1500
+#
 ###################################################################################################################
 
 Arena.MaxRatingDifference = 150
@@ -1557,6 +1628,8 @@ Arena.ArenaSeason.ID = 1
 Arena.ArenaSeasonPrevious.ID = 0
 Arena.StartRating = -1
 Arena.StartPersonalRating = -1
+Arena.LoserNoChange = 0
+Arena.LoserHalfChange = 0
 
 ###################################################################################################################
 # NETWORK CONFIG
@@ -1738,7 +1811,7 @@ SOAP.Port = 7878
 ###################################################################################################################
 # ANTICHEAT
 # Initially from gimly, CWN && many other. current from /dev/rsa
-# all other config optons moved to SQL
+# all other config options moved to SQL
 #
 #    Anticheat.Enable
 #        Enable Movement Anticheat
@@ -1785,6 +1858,67 @@ Anticheat.GmLevel = 0
 CharDelete.Method = 1
 CharDelete.MinLevel = 10
 CharDelete.KeepDays = 30
+
+###################################################################################################################
+#    PvP Token System
+#
+#    PvPToken.Enable
+#        Enable/disable PvP Token system.
+#        Default: 1 (enabled)
+#        0 (disabled)
+#
+#    PvPToken.ItemID
+#        The item ID of the token that players will receive after killing an enemy.
+#        Default: 29434 (Badge of Justice)
+#
+#    PvPToken.ItemCount
+#        The count amount of the ItemID
+#        Default: 1
+#
+#    PvPToken.Gold
+#        The amount of gold that players will receive after killing an enemy.
+#        Default: 100000
+#
+#    PvPToken.MapRestriction
+#        The type of maps where players can receive the token
+#        Default: 4 - all maps
+#                 3 - battlegrounds only
+#                 2 - FFA areas only (both instanced and world arenas)
+#                 1 - battlegrounds and FFA areas only
+#
+###################################################################################################################
+
+PvPToken.Enable = 1
+PvPToken.ItemID = 29434
+PvPToken.ItemCount = 1
+PvPToken.Gold = 100000
+PvPToken.MapRestriction = 4
+
+###################################################################################################################
+#    PvP Announcer System
+#
+#    PvPAnnouncer.Enable
+#       Enable/disable PvP Announcer system.
+#       Default: 1 - enabled
+#                0 - disabled
+###################################################################################################################
+
+PvPAnnouncer.Enable = 1
+PvPAnnouncer.ColorKiller = |CFFFFFF01
+PvPAnnouncer.ColorKilled = |CFFFFFF01
+PvPAnnouncer.ColorArea = |CFFFE8A0E
+
+###################################################################################################################
+#    Flying mounts Everywhere
+#
+#    Allows you to fly through Azeroth
+#
+#    Custom.AllowFlyingMountsEverywhere
+#       Enable/disable Flying mounts Everywhere.
+#       Default: 1 - enabled
+#                0 - disabled
+###################################################################################################################
+Custom.AllowFlyingMountsEverywhere = 1
 
 ###################################################################################################################
 #    Refer-A-Friend system by Mas0n

@@ -47,11 +47,13 @@ void SqlDelayThread::run()
     {
         // if the running state gets turned off while sleeping
         // empty the queue before exiting
+
         ACE_Based::Thread::Sleep(loopSleepms);
 
         SqlOperation* s = NULL;
         while (m_sqlQueue.next(s))
         {
+            if (!s) continue;
             s->Execute(m_dbEngine);
             delete s;
         }

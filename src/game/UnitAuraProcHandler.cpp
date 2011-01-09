@@ -964,6 +964,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                 case 63320:
                     triggered_spell_id = 63321;
                     break;
+                
                 // Shiny Shard of the Scale - Equip Effect
                 case 69739:
                     // Cauterizing Heal or Searing Flame
@@ -1703,6 +1704,20 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                     // triggered_spell_id in spell data
                     break;
                 }
+                // Item - Priest T10 Healer 4P Bonus
+                case 70799:
+                {
+                    if (GetTypeId() != TYPEID_PLAYER)
+                        return SPELL_AURA_PROC_FAILED;
+
+                    // Circle of Healing
+                    ((Player*)this)->RemoveSpellCategoryCooldown(1204, true);
+
+                    // Penance
+                    ((Player*)this)->RemoveSpellCategoryCooldown(1230, true);
+
+                    return SPELL_AURA_PROC_OK;
+                }
                 // Glyph of Prayer of Healing
                 case 55680:
                 {
@@ -1865,7 +1880,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                     basepoints[0] = int32( basepoints[0] / 2);
                     triggered_spell_id = 71023;
                     break;
-                } 
+                }			
             }
             // King of the Jungle
             if (dummySpell->SpellIconID == 2850)
@@ -1942,6 +1957,26 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
 
                     triggered_spell_id = 32747;
                     break;
+                }
+                // Glyph of Backstab
+                case 56800:
+                {
+                    if (Aura* aura = target->GetAura(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_ROGUE, UI64LIT(0x00100000), 0, GetGUID()))
+                    {
+                        uint32 countMin = aura->GetAuraMaxDuration();
+                        uint32 countMax = GetSpellMaxDuration(aura->GetSpellProto());
+                        countMax += 3 * triggerAmount * 1000;
+                        countMax += HasAura(56801) ? 4000 : 0;
+
+                        if (countMin < countMax)
+                        {
+                            aura->SetAuraDuration(aura->GetAuraDuration() + triggerAmount * 1000);
+                            aura->SetAuraMaxDuration(countMin + triggerAmount * 1000);
+                            aura->GetHolder()->SendAuraUpdate(false);
+                            return SPELL_AURA_PROC_OK;
+                        }
+                    }
+                    return SPELL_AURA_PROC_FAILED;
                 }
                 // Tricks of the trade
                 case 57934:
@@ -2372,8 +2407,8 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                     if (GetTypeId() != TYPEID_PLAYER)
                         return SPELL_AURA_PROC_FAILED;
 
-                    triggered_spell_id = 70769;
-                    break;
+                    ((Player*)this)->RemoveSpellCooldown(53385, true);
+                    return SPELL_AURA_PROC_OK;
                 }
                 // Anger Capacitor
                 case 71406:                                 // normal
@@ -2641,14 +2676,14 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                 // Shaman T8 Elemental 4P Bonus
                 case 64928:
                 {
-                    basepoints[0] = int32( triggerAmount * damage / 100 );
+                    basepoints[0] = int32( basepoints[0] / 2); // basepoints is for 1 tick, not all DoT amount
                     triggered_spell_id = 64930;            // Electrified
                     break;
                 }
                 // Shaman T9 Elemental 4P Bonus
                 case 67228:
                 {
-                    basepoints[0] = int32( triggerAmount * damage / 100 );
+                    basepoints[0] = int32( basepoints[0] / 3); // basepoints is for 1 tick, not all DoT amount
                     triggered_spell_id = 71824;
                     break;
                 }
@@ -2665,14 +2700,10 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                 {
                     if (Aura *aur = pVictim->GetAura(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_SHAMAN, UI64LIT(0x0000000010000000), 0, GetGUID()))
                     {
-                        SpellAuraHolder *aurHolder = GetSpellAuraHolder(aur->GetId());
-                        if (aurHolder)
-                        {
-                            int32 amount = aur->GetAuraDuration() + triggerAmount * IN_MILLISECONDS;
-                            aur->SetAuraDuration(amount);
-                            aurHolder->SendAuraUpdate(false);
-                            return SPELL_AURA_PROC_OK;
-                        }
+                        int32 amount = aur->GetAuraDuration() + triggerAmount * IN_MILLISECONDS;
+                        aur->SetAuraDuration(amount);
+                        aur->UpdateAura(false);
+                        return SPELL_AURA_PROC_OK;
                     }
                     return SPELL_AURA_PROC_FAILED;
                 }
@@ -3841,6 +3872,16 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit *pVictim, uint32 d
                 if (procSpell->Id != 47633)
                     return SPELL_AURA_PROC_FAILED;
             }
+            // Item - Death Knight T10 Melee 4P Bonus
+            else if (auraSpellInfo->Id == 70656)
+            {
+                if (GetTypeId() != TYPEID_PLAYER || getClass() != CLASS_DEATH_KNIGHT)
+                    return SPELL_AURA_PROC_FAILED;
+
+                for(uint32 i = 0; i < MAX_RUNES; ++i)
+                    if (((Player*)this)->GetRuneCooldown(i) == 0)
+                        return SPELL_AURA_PROC_FAILED;
+            }
             // Blade Barrier
             else if (auraSpellInfo->SpellIconID == 85)
             {
@@ -3981,6 +4022,14 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit *pVictim, uint32 d
             // 5 rank -> 100% 4 rank -> 80% and etc from full rate
             if(!roll_chance_i(20*rank))
                 return SPELL_AURA_PROC_FAILED;
+            // Item - Shaman T10 Enhancement 4P Bonus
+            if (Aura *aur = GetAura(70832, EFFECT_INDEX_0))
+            {
+                Aura *maelBuff = GetAura(trigger_spell_id, EFFECT_INDEX_0);
+                if (maelBuff && maelBuff->GetStackAmount() + 1 == maelBuff->GetSpellProto()->StackAmount)
+                    if (roll_chance_i(aur->GetModifier()->m_amount))
+                        CastSpell(this, 70831, true, NULL, aur);
+            }
             break;
         }
         // Brain Freeze

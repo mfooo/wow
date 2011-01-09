@@ -32,7 +32,7 @@ class TemporarySummon : public Creature
         void MANGOS_DLL_SPEC UnSummon();
         void SaveToDB();
         ObjectGuid const& GetSummonerGuid() const { return m_summoner ; }
-        Unit* GetSummoner() const { return ObjectAccessor::GetUnit(*this, m_summoner); }
+        MANGOS_DLL_SPEC Unit* GetSummoner() const;
     private:
         TempSummonType m_type;
         uint32 m_timer;

@@ -42,6 +42,9 @@ PetAI::PetAI(Creature *c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK), inComb
     UpdateAllies();
 }
 
+PetAI::~PetAI()
+{}
+
 void PetAI::MoveInLineOfSight(Unit *u)
 {
     if (m_creature->getVictim())

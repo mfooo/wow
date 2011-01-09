@@ -162,6 +162,11 @@ void TemporarySummon::UnSummon()
     AddObjectToRemoveList();
 }
 
+Unit* TemporarySummon::GetSummoner() const
+{
+   return ObjectAccessor::GetUnit(*this, m_summoner);
+}
+
 void TemporarySummon::SaveToDB()
 {
 }

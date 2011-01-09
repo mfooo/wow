@@ -142,7 +142,7 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map *map, uint32 phaseMa
 
     SetEntry(goinfo->id);
 
-    SetUInt32Value(GAMEOBJECT_DISPLAYID, goinfo->displayId);
+    SetDisplayId(goinfo->displayId);
 
     // GAMEOBJECT_BYTES_1, index at 0, 1, 2 and 3
     SetGoState(go_state);

@@ -7,7 +7,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -17,10 +17,10 @@
 ## Process this file with automake to produce Makefile.in
 
 ## Sub-directories to parse
-SUBDIRS = vmap
+SUBDIRS = playerbot
 
 ## CPP flags for includes, defines, etc.
-AM_CPPFLAGS = $(MANGOS_INCLUDES) -I$(top_builddir)/src/shared -I$(srcdir) -I$(srcdir)/../../dep/include -I$(srcdir)/../framework -I$(srcdir)/../shared -I$(srcdir)/vmap -I$(srcdir)/../realmd -I$(srcdir)/../../dep/include/g3dlite -DSYSCONFDIR=\"$(sysconfdir)/\"
+AM_CPPFLAGS = $(MANGOS_INCLUDES) -I$(top_builddir)/src/shared -I$(srcdir) -I$(srcdir)/../../dep/include -I$(srcdir)/../framework -I$(srcdir)/../shared -I$(srcdir)/../shared/vmap -I$(srcdir)/../realmd -DSYSCONFDIR=\"$(sysconfdir)/\"
 
 ## Build MaNGOS game library as convenience library.
 #  All libraries will be convenience libraries. Might be changed to shared
@@ -198,6 +198,9 @@ libmangosgame_a_SOURCES = \
 	MiscHandler.cpp \
 	MotionMaster.cpp \
 	MotionMaster.h \
+	MoveMap.cpp \
+	MoveMap.h \
+	MoveMapSharedDefines.h \
 	MovementGenerator.cpp \
 	MovementGenerator.h \
 	MovementGeneratorImpl.h \
@@ -221,6 +224,8 @@ libmangosgame_a_SOURCES = \
 	Opcodes.cpp \
 	Opcodes.h \
 	Path.h \
+	PathFinder.cpp \
+	PathFinder.h \
 	PetAI.cpp \
 	PetAI.h \
 	Pet.cpp \

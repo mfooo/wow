@@ -1,0 +1,15 @@
+This read me is to explain how to set up the mm_map System  lets begin
+some of these steps you can skip but if you follow these directions there willl be less chance for error and ect
+
+
+first step is to compile  to the core and sd2   after this is complete head to the folder contrib in your main mangos repo source
+inside this folder you'll need to find these three folders ,extractor folder , mmap , vmap_extractor_v3
+after you find these folders you 'll need to compile their vc 90  if the compile ask you say yes do it again 
+after rerun  your ad and vmap extractor  in your client   when those are finished move them to your emu. folder  in the mmaps folder in release you'll need to move the movegen.exe to the same folder as your dbc and vmap files create a folder name mmaps
+and run the movegen.exe   this will take awhile  plan on at least good half of day down time
+
+mmaps configs are in the mangos.config
+
+but that should be it  enjoy
+
+ big thnxs to the boys at faramir118  git repo   for the mm_maps System (pathfinding)

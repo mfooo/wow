@@ -180,7 +180,10 @@ class MANGOS_DLL_SPEC Object
 
         const uint64& GetUInt64Value( uint16 index ) const
         {
-            MANGOS_ASSERT( index + 1 < m_valuesCount || PrintIndexError( index , false) );
+            // MANGOS_ASSERT( index + 1 < m_valuesCount || PrintIndexError( index , false) ); 
+            if (!m_uint32Values) 
+                return GetUInt64Value(0); 
+  
             return *((uint64*)&(m_uint32Values[ index ]));
         }
 
@@ -488,6 +491,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         virtual const char* GetNameForLocaleIdx(int32 /*locale_idx*/) const { return GetName(); }
 
         float GetDistance( const WorldObject* obj ) const;
+        float GetDistanceSqr(float x, float y, float z) const;
         float GetDistance(float x, float y, float z) const;
         float GetDistance2d(const WorldObject* obj) const;
         float GetDistance2d(float x, float y) const;
@@ -519,6 +523,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
 
         float GetAngle( const WorldObject* obj ) const;
         float GetAngle( const float x, const float y ) const;
+        bool HasInArc( const float arcangle, const float x, const float y) const;
         bool HasInArc( const float arcangle, const WorldObject* obj ) const;
         bool isInFrontInMap(WorldObject const* target,float distance, float arc = M_PI) const;
         bool isInBackInMap(WorldObject const* target, float distance, float arc = M_PI) const;
@@ -565,6 +570,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
 
         void SetMap(Map * map);
         Map * GetMap() const { MANGOS_ASSERT(m_currMap); return m_currMap; }
+        Map * GetMapSafe() const { return m_currMap; }
         //used to check all object's GetMap() calls when object is not in world!
         void ResetMap() { m_currMap = NULL; }
 
@@ -593,6 +599,9 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         bool isActiveObject() const { return m_isActiveObject || m_viewPoint.hasViewers(); }
 
         ViewPoint& GetViewPoint() { return m_viewPoint; }
+		
+        Creature* GetClosestCreatureWithEntry(WorldObject* pSource, uint32 uiEntry, float fMaxSearchRange);
+        GameObject* GetClosestGameObjectWithEntry(WorldObject* pSource, uint32 uiEntry, float fMaxSearchRange);
     protected:
         explicit WorldObject();
 

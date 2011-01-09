@@ -51,6 +51,8 @@ struct GridMapFileHeader
     uint32 heightMapSize;
     uint32 liquidMapOffset;
     uint32 liquidMapSize;
+    uint32 holesOffset;
+    uint32 holesSize;
 };
 
 #define MAP_AREA_NO_AREA      0x0001

@@ -83,7 +83,8 @@ enum WorldTimers
     WUPDATE_EVENTS      = 6,
     WUPDATE_DELETECHARS = 7,
     WUPDATE_AUTOBROADCAST = 8,
-    WUPDATE_COUNT       = 9
+	WUPDATE_EXT_MAIL    = 9,
+    WUPDATE_COUNT       = 10
 };
 
 /// Configuration elements
@@ -192,6 +193,10 @@ enum eConfigUInt32Values
     CONFIG_UINT32_ANTICHEAT_ACTION_DELAY,
     CONFIG_UINT32_NUMTHREADS,
     CONFIG_UINT32_RANDOM_BG_RESET_HOUR,
+    CONFIG_UINT32_LOSERNOCHANGE,
+    CONFIG_UINT32_LOSERHALFCHANGE,
+	CONFIG_UINT32_BASE_PET_SCALE,
+	CONFIG_UINT32_EXTERNAL_MAIL_INTERVAL,
     CONFIG_UINT32_RAF_MAXGRANTLEVEL,
     CONFIG_UINT32_RAF_MAXREFERALS,
     CONFIG_UINT32_RAF_MAXREFERERS,
@@ -279,8 +284,15 @@ enum eConfigFloatValues
     CONFIG_FLOAT_CREATURE_FAMILY_ASSISTANCE_RADIUS,
     CONFIG_FLOAT_GROUP_XP_DISTANCE,
     CONFIG_FLOAT_THREAT_RADIUS,
+   
+    //PvP Token
+    CONFIG_FLOAT_PVP_TOKEN_ITEMID,
+    CONFIG_FLOAT_PVP_TOKEN_ITEMCOUNT,
+    CONFIG_FLOAT_PVP_TOKEN_GOLD,
+    CONFIG_FLOAT_PVP_TOKEN_RESTRICTION,
     CONFIG_FLOAT_GHOST_RUN_SPEED_WORLD,
     CONFIG_FLOAT_GHOST_RUN_SPEED_BG,
+	
     CONFIG_FLOAT_VALUE_COUNT
 };
 
@@ -337,9 +349,19 @@ enum eConfigBoolValues
     CONFIG_BOOL_VMAP_INDOOR_CHECK,
     CONFIG_BOOL_LOOT_CHESTS_IGNORE_DB,
     CONFIG_BOOL_PET_UNSUMMON_AT_MOUNT,
-    CONFIG_BOOL_ANTICHEAT_ENABLE,
+    CONFIG_BOOL_MMAP_ENABLED,
+    CONFIG_BOOL_ANTICHEAT_ENABLE,    
     CONFIG_BOOL_ALLOW_FLIGHT_ON_OLD_MAPS,
-    CONFIG_BOOL_VALUE_COUNT
+    CONFIG_BOOL_EXTERNAL_MAIL_ENABLED,
+	
+	// PvP Token
+    CONFIG_BOOL_PVP_TOKEN_ENABLE,
+    // PvP Announcer
+    CONFIG_BOOL_PVP_ANNOUNCER,
+    // Flying Everywhere
+    CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE,
+	
+	CONFIG_BOOL_VALUE_COUNT
 };
 
 /// Can be used in SMSG_AUTH_RESPONSE packet
@@ -520,6 +542,9 @@ class World
         void SendZoneMessage(uint32 zone, WorldPacket *packet, WorldSession *self = 0, uint32 team = 0);
         void SendZoneText(uint32 zone, const char *text, WorldSession *self = 0, uint32 team = 0);
         void SendServerMessage(ServerMessageType type, const char *text = "", Player* player = NULL);
+		
+        //PVP Announcer
+        void SendPvPAnnounce(Player* killer, Player* killed); 
 
         /// Are we in the middle of a shutdown?
         bool IsShutdowning() const { return m_ShutdownTimer > 0; }
@@ -596,6 +621,7 @@ class World
         //used Script version
         void SetScriptsVersion(char const* version) { m_ScriptsVersion = version ? version : "unknown scripting library"; }
         char const* GetScriptsVersion() { return m_ScriptsVersion.c_str(); }
+        ACE_Thread_Mutex m_spellUpdateLock;
 
     protected:
         void _UpdateGameTime();

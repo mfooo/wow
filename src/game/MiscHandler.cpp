@@ -474,7 +474,7 @@ void WorldSession::HandleAddFriendOpcodeCallBack(QueryResult *result, uint32 acc
             friendResult = FRIEND_SELF;
         else if(session->GetPlayer()->GetTeam() != team && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_ADD_FRIEND) && session->GetSecurity() < SEC_MODERATOR)
             friendResult = FRIEND_ENEMY;
-        else if(session->GetPlayer()->GetSocial()->HasFriend(friendGuid))
+       else if(session->GetPlayer()->GetSocial()->HasFriend(friendGuid))
             friendResult = FRIEND_ALREADY;
         else
         {
@@ -794,7 +794,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket & recv_data)
 
         if(missingItem || missingLevel || missingQuest)
         {
-            // hack for "Opening of the Dark Portal"
+             // hack for "Opening of the Dark Portal"
             if(missingQuest && at->target_mapId == 269)
                 SendAreaTriggerMessage("%s", at->requiredFailedText.c_str());
             else if(missingQuest && mapEntry->IsContinent())// do not report anything for quest areatriggers
@@ -804,7 +804,7 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket & recv_data)
                 SendAreaTriggerMessage(GetMangosString(LANG_LEVEL_MINREQUIRED), at->requiredLevel);
             else
                 GetPlayer()->SendTransferAborted(at->target_mapId, TRANSFER_ABORT_DIFFICULTY, GetPlayer()->GetDifficulty(mapEntry->IsRaid()));
-            return;
+             return;
         }
     }
 
@@ -1476,8 +1476,14 @@ void WorldSession::HandleCancelMountAuraOpcode( WorldPacket & /*recv_data*/ )
         return;
     }
 
-    _player->Unmount();
-    _player->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
+    /*  Flying Everywhere   */
+    if (sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE) && _player->HasAuraTypeFlyingSpell())
+        _player->SetFlyingMountTimer();
+    else
+    {
+        _player->Unmount();
+        _player->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
+    }
 }
 
 void WorldSession::HandleMoveSetCanFlyAckOpcode( WorldPacket & recv_data )

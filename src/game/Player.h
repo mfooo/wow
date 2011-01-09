@@ -32,13 +32,14 @@
 #include "WorldSession.h"
 #include "Pet.h"
 #include "MapReference.h"
-#include "Util.h"                                           // for Tokens typedef
+#include "Util.h"                                          // for Tokens typedef
 #include "AchievementMgr.h"
 #include "ReputationMgr.h"
 #include "BattleGround.h"
 #include "DBCStores.h"
 #include "SharedDefines.h"
 #include "AntiCheat.h"
+#include "SpellMgr.h"
 
 #include<string>
 #include<vector>
@@ -54,6 +55,10 @@ class PlayerSocial;
 class InstanceSave;
 class Spell;
 class Item;
+
+// Playerbot mod
+#include "playerbot/PlayerbotMgr.h"
+#include "playerbot/PlayerbotAI.h"
 
 typedef std::deque<Mail*> PlayerMails;
 
@@ -651,6 +656,8 @@ enum AtLoginFlags
     AT_LOGIN_CUSTOMIZE         = 0x08,
     AT_LOGIN_RESET_PET_TALENTS = 0x10,
     AT_LOGIN_FIRST             = 0x20,
+    AT_LOGIN_CHANGE_FACTION    = 0x40,
+    AT_LOGIN_CHANGE_RACE       = 0x80
 };
 
 typedef std::map<uint32, QuestStatusData> QuestStatusMap;
@@ -1337,6 +1344,100 @@ class MANGOS_DLL_SPEC Player : public Unit
         void AutoStoreLoot(uint32 loot_id, LootStore const& store, bool broadcast = false, uint8 bag = NULL_BAG, uint8 slot = NULL_SLOT);
         void AutoStoreLoot(Loot& loot, bool broadcast = false, uint8 bag = NULL_BAG, uint8 slot = NULL_SLOT);
 
+		/// Flying Everywhere
+        void FlyingMountsSpellsToItems();
+        bool CanUseFlyingMounts(SpellEntry const* spellInfo);
+        // helper functions
+        bool isFlyingSpell(SpellEntry const* spellInfo) const
+        {
+            return spellInfo->EffectApplyAuraName[0]==SPELL_AURA_MOUNTED &&
+            IsSpellHaveAura(spellInfo, SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED);
+            //IsSpellHaveAura(spellInfo, SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED);
+            //spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED && 
+            //spellInfo->EffectApplyAuraName[2]==SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED;
+        }
+
+        bool isRunningSpell(SpellEntry const* spellInfo) const
+        {
+            return spellInfo->EffectApplyAuraName[0]==SPELL_AURA_MOUNTED &&
+            spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED; 
+        }
+
+        bool isFlyingFormSpell(SpellEntry const* spellInfo) const
+        { 
+            return spellInfo->EffectApplyAuraName[0]==SPELL_AURA_MOD_SHAPESHIFT &&
+            spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MECHANIC_IMMUNITY &&
+            spellInfo->EffectApplyAuraName[2]==SPELL_AURA_FLY;
+        }
+
+        bool isRunningFormSpell(SpellEntry const* spellInfo) const
+        { 
+            return spellInfo->EffectApplyAuraName[0]==SPELL_AURA_MOD_SHAPESHIFT &&
+            spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MECHANIC_IMMUNITY &&
+            spellInfo->EffectApplyAuraName[2]!=SPELL_AURA_FLY;
+        }
+
+        void RemoveFlyingSpells()
+        {  
+            Unmount(); 
+            RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
+            RemoveSpellsCausingAura(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED); //BM added
+            //RemoveSpellsCausingAura(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED); //BM removed
+            //RemoveSpellsCausingAura(SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED); //BM removed
+        }
+
+        void RemoveFlyingFormSpells()
+        { 
+            RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
+            RemoveSpellsCausingAura(SPELL_AURA_MECHANIC_IMMUNITY);
+            RemoveSpellsCausingAura(SPELL_AURA_FLY);
+        }
+
+        void RemoveRunningFormSpells()
+        { 
+            RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
+            RemoveSpellsCausingAura(SPELL_AURA_MECHANIC_IMMUNITY);
+        }
+
+        void RemoveAllFlyingSpells()
+        {
+            RemoveFlyingSpells();
+            RemoveFlyingFormSpells();
+        }
+
+        bool HasAuraTypeFlyingSpell()
+        {
+            return HasAuraType(SPELL_AURA_MOUNTED) &&
+            HasAuraType(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED);       //BM added
+            //HasAuraType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED) &&  //BM removed
+            //HasAuraType(SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED);   //BM removed
+        }
+
+        bool HasAuraTypeFlyingFormSpell()
+        {
+            return HasAuraType(SPELL_AURA_MOD_SHAPESHIFT) &&
+            HasAuraType(SPELL_AURA_MECHANIC_IMMUNITY) &&
+            HasAuraType(SPELL_AURA_FLY);
+        }
+
+        bool HasAuraTypeRunningFormSpell()
+        {
+            return HasAuraType(SPELL_AURA_MOD_SHAPESHIFT) &&
+            HasAuraType(SPELL_AURA_MECHANIC_IMMUNITY) &&
+            !HasAuraType(SPELL_AURA_FLY);
+        }
+
+        bool GetFlyingMountTimer()
+        {
+            return m_flytimer < time(NULL);
+        }
+
+        void SetFlyingMountTimer()
+        {
+            m_flytimer = time(NULL) + 0.5;
+        }
+        //end of helpers.
+        ///end of Flying Everywhere
         uint8 _CanTakeMoreSimilarItems(uint32 entry, uint32 count, Item* pItem, uint32* no_space_count = NULL) const;
         uint8 _CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec& dest, uint32 entry, uint32 count, Item *pItem = NULL, bool swap = false, uint32* no_space_count = NULL ) const;
 
@@ -1549,6 +1650,11 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         void AddTimedQuest( uint32 quest_id ) { m_timedquests.insert(quest_id); }
         void RemoveTimedQuest( uint32 quest_id ) { m_timedquests.erase(quest_id); }
+
+        void chompAndTrim(std::string& str);
+        bool getNextQuestId(const std::string& pString, unsigned int& pStartPos, unsigned int& pId);
+		void skill(std::list<uint32>& m_spellsToLearn);
+        bool requiredQuests(const char* pQuestIdString);
 
         /*********************************************************/
         /***                   LOAD SYSTEM                     ***/
@@ -1927,6 +2033,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         void UpdateArmorPenetration();
         void ApplyManaRegenBonus(int32 amount, bool apply);
         void UpdateManaRegen();
+		
+		void ApplyHealthRegenBonus(int32 amount, bool apply);
 
         const uint64& GetLootGUID() const { return m_lootGuid.GetRawValue(); }
         void SetLootGUID(ObjectGuid const& guid) { m_lootGuid = guid; }
@@ -2095,6 +2203,9 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _ApplyWeaponDependentAuraCritMod(Item *item, WeaponAttackType attackType, Aura* aura, bool apply);
         void _ApplyWeaponDependentAuraDamageMod(Item *item, WeaponAttackType attackType, Aura* aura, bool apply);
 
+        ///PVP Token
+        void ReceiveToken();
+		
         void _ApplyItemMods(Item *item,uint8 slot,bool apply);
         void _RemoveAllItemMods();
         void _ApplyAllItemMods();
@@ -2262,6 +2373,26 @@ class MANGOS_DLL_SPEC Player : public Unit
         void UpdateSpeakTime();
         bool CanSpeak() const;
         void ChangeSpeakTime(int utime);
+		
+        // Jail by WarHead
+        // --------------
+        // Char datas...
+        bool m_jail_warning;
+        bool m_jail_amnestie;
+        bool m_jail_isjailed;           // Is this player jailed?
+        std::string m_jail_char;        // Name of jailed char
+        uint32 m_jail_guid;             // guid of the jailed char
+        uint32 m_jail_release;          // When is the player a free man/woman?
+        std::string m_jail_reason;      // Why was the char jailed?
+        uint32 m_jail_times;            // How often was the player jailed?
+        uint32 m_jail_amnestietime;
+        uint32 m_jail_gmacc;            // Used GM acc
+        std::string m_jail_gmchar;      // Used GM char
+        std::string m_jail_lasttime;    // Last jail time
+        uint32 m_jail_duration;         // Duration of the jail
+        // Load / save functions...
+        void _LoadJail(void);           // Loads the jail data
+        void _SaveJail(void);           // Saves the jail data
 
         /*********************************************************/
         /*** REFER-A-FRIEND SYSTEM ***/
@@ -2460,6 +2591,18 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetTitle(CharTitlesEntry const* title, bool lost = false);
 
         bool canSeeSpellClickOn(Creature const* creature) const;
+
+        // Playerbot mod:
+        // A Player can either have a playerbotMgr (to manage its bots), or have playerbotAI (if it is a bot), or
+        // neither. Code that enables bots must create the playerbotMgr and set it using SetPlayerbotMgr.
+        void SetPlayerbotAI(PlayerbotAI* ai) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotAI=ai; }
+        PlayerbotAI* GetPlayerbotAI() { return m_playerbotAI; }
+        void SetPlayerbotMgr(PlayerbotMgr* mgr) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotMgr=mgr; }
+        PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr; }
+        void SetBotDeathTimer() { m_deathTimer = 0; }
+		
+        uint32 m_grid_update_timer;
+
     protected:
 
         uint32 m_contestedPvPTimer;
@@ -2608,6 +2751,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         uint16 m_baseSpellPower;
         uint16 m_baseFeralAP;
         uint16 m_baseManaRegen;
+		uint16 m_baseHealthRegen;
         float m_armorPenetrationPct;
         int32 m_spellPenetrationItemMod;
 
@@ -2645,6 +2789,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         uint32 m_deathTimer;
         time_t m_deathExpireTime;
+		time_t m_flytimer;
 
         uint32 m_restTime;
 
@@ -2735,6 +2880,10 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         GridReference<Player> m_gridRef;
         MapReference m_mapRef;
+
+         // Playerbot mod:
+        PlayerbotAI* m_playerbotAI;
+        PlayerbotMgr* m_playerbotMgr;
 
         // Homebind coordinates
         uint32 m_homebindMapId;

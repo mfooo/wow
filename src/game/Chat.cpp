@@ -170,6 +170,8 @@ ChatCommand * ChatHandler::getCommandTable()
         { "customize",      SEC_GAMEMASTER,     true,  &ChatHandler::HandleCharacterCustomizeCommand,  "", NULL },
         { "deleted",        SEC_GAMEMASTER,     true,  NULL,                                           "", characterDeletedCommandTable},
         { "erase",          SEC_CONSOLE,        true,  &ChatHandler::HandleCharacterEraseCommand,      "", NULL },
+        { "changefaction",  SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleCharacterChangeFactionCommand, "", NULL },
+        { "changerace",     SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleCharacterChangeRaceCommand, "", NULL },
         { "level",          SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleCharacterLevelCommand,      "", NULL },
         { "rename",         SEC_GAMEMASTER,     true,  &ChatHandler::HandleCharacterRenameCommand,     "", NULL },
         { "reputation",     SEC_GAMEMASTER,     true,  &ChatHandler::HandleCharacterReputationCommand, "", NULL },
@@ -359,6 +361,17 @@ ChatCommand * ChatHandler::getCommandTable()
         { "taxinode",       SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleLookupTaxiNodeCommand,      "", NULL },
         { "tele",           SEC_MODERATOR,      true,  &ChatHandler::HandleLookupTeleCommand,          "", NULL },
         { "title",          SEC_GAMEMASTER,     true,  &ChatHandler::HandleLookupTitleCommand,         "", NULL },
+        { NULL,             0,                  false, NULL,                                           "", NULL }
+    };
+	
+    static ChatCommand mmapCommandTable[] =
+    {
+        { "path",           SEC_GAMEMASTER,     false, &ChatHandler::HandleMmapPathCommand,            "", NULL },
+        { "loc",            SEC_GAMEMASTER,     false, &ChatHandler::HandleMmapLocCommand,             "", NULL },
+        { "loadedtiles",    SEC_GAMEMASTER,     false, &ChatHandler::HandleMmapLoadedTilesCommand,     "", NULL },
+        { "stats",          SEC_GAMEMASTER,     false, &ChatHandler::HandleMmapStatsCommand,           "", NULL },
+        { "testarea",       SEC_GAMEMASTER,     false, &ChatHandler::HandleMmapTestArea,               "", NULL },
+        { "",               SEC_ADMINISTRATOR,  false, &ChatHandler::HandleMmap,                       "", NULL },
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
@@ -703,6 +716,11 @@ ChatCommand * ChatHandler::getCommandTable()
         { "reload",         SEC_ADMINISTRATOR,  true,  NULL,                                           "", reloadCommandTable   },
         { "reset",          SEC_ADMINISTRATOR,  true,  NULL,                                           "", resetCommandTable    },
         { "server",         SEC_PLAYER,         true,  NULL,                                           "", serverCommandTable   },
+         // Jail by WarHead 
+        { "jail",           SEC_MODERATOR,      false, &ChatHandler::HandleJailCommand,                "", NULL },
+        { "jailinfo",       SEC_PLAYER,         true,  &ChatHandler::HandleJailInfoCommand,            "", NULL },
+        { "unjail",         SEC_MODERATOR,      false, &ChatHandler::HandleUnJailCommand,              "", NULL },
+        { "jailreload",     SEC_ADMINISTRATOR,  false, &ChatHandler::HandleJailReloadCommand,          "", NULL },
         { "tele",           SEC_MODERATOR,      true,  NULL,                                           "", teleCommandTable     },
         { "titles",         SEC_GAMEMASTER,     false, NULL,                                           "", titlesCommandTable   },
         { "trigger",        SEC_GAMEMASTER,     false, NULL,                                           "", triggerCommandTable  },
@@ -767,7 +785,10 @@ ChatCommand * ChatHandler::getCommandTable()
         { "repairitems",    SEC_GAMEMASTER,     true,  &ChatHandler::HandleRepairitemsCommand,         "", NULL },
         { "stable",         SEC_ADMINISTRATOR,  false, &ChatHandler::HandleStableCommand,              "", NULL },
         { "waterwalk",      SEC_GAMEMASTER,     false, &ChatHandler::HandleWaterwalkCommand,           "", NULL },
+        //Playerbot mod
+        { "bot",            SEC_PLAYER,         false, &ChatHandler::HandlePlayerbotCommand,           "", NULL },
         { "quit",           SEC_CONSOLE,        true,  &ChatHandler::HandleQuitCommand,                "", NULL },
+        { "mmap",           SEC_GAMEMASTER,     false, NULL,                                           "", mmapCommandTable },
 
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };

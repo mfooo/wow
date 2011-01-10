@@ -432,6 +432,7 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                     }
                     // Bone Storm
                     case 69075:
+                    case 69076:
                     case 70834:
                     case 70835:
                     case 70836:

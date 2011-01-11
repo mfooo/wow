@@ -4112,7 +4112,12 @@ bool ChatHandler::HandleNpcInfoCommand(char* /*args*/)
     uint32 displayid = target->GetDisplayId();
     uint32 nativeid = target->GetNativeDisplayId();
     uint32 Entry = target->GetEntry();
+    uint32 phaseMask = target->GetPhaseMask();
     CreatureInfo const* cInfo = target->GetCreatureInfo();
+    uint32 VehicleId = cInfo ? cInfo->VehicleId : 0;
+    uint32 difficulty_entry_1 = cInfo ? cInfo->DifficultyEntry[0] : 0;
+    uint32 difficulty_entry_2 = cInfo ? cInfo->DifficultyEntry[1] : 0;
+    uint32 difficulty_entry_3 = cInfo ? cInfo->DifficultyEntry[2] : 0;
 
     time_t curRespawnDelay = target->GetRespawnTimeEx()-time(NULL);
     if(curRespawnDelay < 0)
@@ -4121,9 +4126,9 @@ bool ChatHandler::HandleNpcInfoCommand(char* /*args*/)
     std::string defRespawnDelayStr = secsToTimeString(target->GetRespawnDelay(),true);
 
     PSendSysMessage(LANG_NPCINFO_CHAR,  target->GetDBTableGUIDLow(), faction, npcflags, Entry, displayid, nativeid);
-
-    if (cInfo->VehicleId)
-        PSendSysMessage("VehicleId: %u", cInfo->VehicleId);
+    
+    PSendSysMessage("VehicleId: %u", VehicleId);
+    PSendSysMessage("difficulty_entry_1: %u, difficulty_entry_2: %u, difficulty_entry_3: %u", difficulty_entry_1, difficulty_entry_2, difficulty_entry_3);
 
     PSendSysMessage(LANG_NPCINFO_LEVEL, target->getLevel());
     PSendSysMessage(LANG_NPCINFO_HEALTH,target->GetCreateHealth(), target->GetMaxHealth(), target->GetHealth());
@@ -4132,7 +4137,8 @@ bool ChatHandler::HandleNpcInfoCommand(char* /*args*/)
     PSendSysMessage(LANG_NPCINFO_LOOT,  cInfo->lootid,cInfo->pickpocketLootId,cInfo->SkinLootId);
     PSendSysMessage(LANG_NPCINFO_DUNGEON_ID, target->GetInstanceId());
     PSendSysMessage(LANG_NPCINFO_POSITION,float(target->GetPositionX()), float(target->GetPositionY()), float(target->GetPositionZ()));
-
+    PSendSysMessage("phaseMask: %u", phaseMask);
+    
     if ((npcflags & UNIT_NPC_FLAG_VENDOR) )
     {
         SendSysMessage(LANG_NPCINFO_VENDOR);

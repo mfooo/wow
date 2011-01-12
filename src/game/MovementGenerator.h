@@ -35,7 +35,7 @@ class MANGOS_DLL_SPEC MovementGenerator
 
         // called before adding movement generator to motion stack
         virtual void Initialize(Unit &) = 0;
-        // called aftre remove movement generator from motion stack
+        // called after remove movement generator from motion stack
         virtual void Finalize(Unit &) = 0;
 
         // called before lost top position (before push new movement generator above)
@@ -53,7 +53,7 @@ class MANGOS_DLL_SPEC MovementGenerator
 
         virtual bool GetDestination(float& /*x*/, float& /*y*/, float& /*z*/) const { return false; }
 
-        // given destination unreachable? due to pathfinsing or other
+        // given destination unreachable? due to pathfinding or other
         virtual bool IsReachable() const { return true; }
 
         // used by Evade code for select point to evade with expected restart default movement

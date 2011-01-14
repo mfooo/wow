@@ -36,6 +36,7 @@
 #include "MapManager.h"
 #include "BattleGround.h"
 #include "BattleGroundAB.h"
+#include "BattleGroundSA.h"
 #include "Map.h"
 #include "InstanceData.h"
 
@@ -961,7 +962,14 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                         }
                         case 1762:                          // SA, win without losing any siege vehicles
                         case 2192:                          // SA, win without losing any siege vehicles
-                            continue;                       // not implemented
+                        {
+                            if (bg->GetTypeID(true) != BATTLEGROUND_SA)
+                                continue;
+
+                            if (((BattleGroundSA*)bg)->isDemolisherDestroyed[GetPlayer()->GetTeam() == ALLIANCE ? 0 : 1])
+                                continue;
+                            break;
+                        }
                     }
                 }
 

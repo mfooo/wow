@@ -1707,6 +1707,42 @@ void BattleGround::SendYell2ToAll(int32 entry, uint32 language, ObjectGuid guid,
     BroadcastWorker(bg_do);
 }
 
+void BattleGround::SendWarningToAll(int32 entry, ...)
+{
+    const char *format = sObjectMgr.GetMangosStringForDBCLocale(entry);
+    va_list ap;
+    char str [1024];
+    va_start(ap, entry);
+    vsnprintf(str,1024,format, ap);
+    va_end(ap);
+    std::string msg = (std::string)str;
+
+    WorldPacket data(SMSG_MESSAGECHAT, 200);
+
+    data << (uint8)CHAT_MSG_RAID_BOSS_EMOTE;
+    data << (uint32)LANG_UNIVERSAL;
+    data << (uint64)0;
+    data << (uint32)0; // 2.1.0
+    data << (uint32)1;
+    data << (uint8)0;
+    data << (uint64)0;
+    data << (uint32)(strlen(msg.c_str())+1);
+    data << msg.c_str();
+    data << (uint8)0;
+    uint8 control = 0;
+    for (BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+    {
+        if (control == 40) // More than 40 iterations? This is imposible, so, break me!
+            break;
+
+        if (Player *plr = ObjectAccessor::FindPlayer(ObjectGuid(itr->first)))
+            if (plr->GetSession())
+                plr->GetSession()->SendPacket(&data);
+
+        ++control;
+    }
+}
+
 void BattleGround::EndNow()
 {
     RemoveFromBGFreeSlotQueue();
@@ -1881,4 +1917,12 @@ void BattleGround::SetBracket( PvPDifficultyEntry const* bracketEntry )
 {
     m_BracketId  = bracketEntry->GetBracketId();
     SetLevelRange(bracketEntry->minLevel,bracketEntry->maxLevel);
+}
+
+GameObject* BattleGround::GetBGObject(uint32 type)
+{
+    GameObject *obj = GetBgMap()->GetGameObject(m_BgObjects[type]);
+    if (!obj)
+        sLog.outError("couldn't get gameobject %i",type);
+    return obj;
 }

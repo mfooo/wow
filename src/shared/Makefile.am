@@ -75,3 +75,4 @@ EXTRA_DIST += \
 	ServiceWin32.h \
 	WheatyExceptionReport.cpp \
 	WheatyExceptionReport.h
+

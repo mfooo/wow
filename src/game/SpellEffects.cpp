@@ -7466,6 +7466,32 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     }
                     return;
                 }
+                //Glyph of Scourge Strike 
+                case 69961: 
+                { 
+                    Unit::SpellAuraHolderMap const& auras = unitTarget->GetSpellAuraHolderMap(); 
+                    for(Unit::SpellAuraHolderMap::const_iterator itr = auras.begin(); itr!=auras.end(); ++itr) 
+                    { 
+                        if (itr->second->GetSpellProto()->Dispel == DISPEL_DISEASE && 
+                            itr->second->GetCasterGuid() == m_caster->GetGUID()) 
+                        if (Aura* aura =itr->second->GetAuraByEffectIndex(EFFECT_INDEX_0)) 
+                        { 
+                            uint32 countMin = aura->GetAuraMaxDuration(); 
+                            uint32 countMax = GetSpellMaxDuration(aura->GetSpellProto()); 
+                            countMax += 9000; 
+                            countMax += m_caster->HasAura(49036) ? 3000 : 0; //Epidemic (Rank 1) 
+                            countMax += m_caster->HasAura(49562) ? 6000 : 0; //Epidemic (Rank 2) 
+ 
+                            if (countMin < countMax) 
+                            { 
+                                aura->SetAuraDuration(aura->GetAuraDuration() + 3000); 
+                                aura->SetAuraMaxDuration(countMin + 3000); 
+                                aura->GetHolder()->SendAuraUpdate(false); 
+                            } 
+                        } 
+                    } 
+                return; 
+                } 
                 case 55328:                                    // Stoneclaw Totem I
                 case 55329:                                    // Stoneclaw Totem II
                 case 55330:                                    // Stoneclaw Totem III

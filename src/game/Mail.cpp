@@ -1105,101 +1105,63 @@ void MailDraft::SendMailTo(MailReceiver const& receiver, MailSender const& sende
 
 /* 
 * Processes the external mail queue
- *
+ */
 void WorldSession::SendExternalMails()
 {
-    BASIC_LOG("EXTMAIL> Sending mails in queue...");
-
-    //                                                    0     1           2          3          4        5       6
-    QueryResult *result = CharacterDatabase.Query("SELECT e.id, e.receiver, e.subject, e.message, e.money, i.item, i.count FROM mail_external e LEFT JOIN mail_external_items i ON e.id = i.mail_id ORDER BY e.id;");
+    sLog.outString("<EXTERNAL MAIL> Send Mails from Queue...");
+    QueryResult *result = CharacterDatabase.Query("SELECT id,receiver,subject,message,money,item,item_count FROM mail_external");
     if(!result)
     {
-        BASIC_LOG("EXTMAIL> No mails in queue...");
+        sLog.outString("<EXTERNAL MAIL> No Mails in Queue.");
         delete result;
         return;
     }
-    else
-    {
-        uint32 last_id = 0;
-        MailDraft* mail = NULL;
-        uint32 last_receiver_guid;
-
-
-        // Code here may seem a little complicated, this is because we had to find a way to process the left join
-        // Basically it checks if this is an item still belonging to the same mail and if not the current mail gets sent and a new one gets created
-        do
-        {
-            Field *fields = result->Fetch();
-            uint32 id = fields[0].GetUInt32();
-            uint64 receiver_guid = fields[1].GetUInt64();
-            std::string subject = fields[2].GetString();
-            std::string message = fields[3].GetString();
-            uint32 money = fields[4].GetUInt32();
-            uint32 itemId = fields[5].GetUInt32();
-            uint32 itemCount = fields[6].GetUInt32();
-
-            Player *receiver = sObjectMgr.GetPlayer( receiver_guid );
-
-            if (id != last_id)
-            {
-                // send mail
-                if (last_id != 0)
-                {
-                    BASIC_LOG("EXTMAIL> Sending mail with id %u to character with guid %d", last_id, last_receiver_guid);
-                    mail->SendMailTo( MailReceiver(last_receiver_guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_RETURNED);
-                    delete mail;
-                    CharacterDatabase.PExecute("DELETE mail_external AS e, mail_external_items AS i FROM mail_external AS e, mail_external_items AS i WHERE i.mail_id = e.id AND e.id = %u;", last_id);
-                    BASIC_LOG("EXTMAIL> Mail sent");
-                }
-
-                // create new mail
-                mail = new MailDraft( subject, message );
-
-                if(money)
-                {
-                    DETAIL_LOG("EXTMAIL> Adding money");
-                    mail->AddMoney(money);
-                }
-            }
-
-            if (itemId)
-            {
-                DETAIL_LOG("EXTMAIL> Adding %u of item with id %u", itemCount, itemId);
-                Item* mailItem = Item::CreateItem( itemId, itemCount, receiver );
-                if( !mailItem )
-                    sLog.outError("EXTMAIL> Error creating item with Id %i", itemId);
-                else
-                {
-                    if ( mailItem->GetCount() < itemCount )
-                        sLog.outError("EXTMAIL> itemCount is %u but max stack size for this item is %u", itemCount, mailItem->GetCount());
-
-                    mailItem->SaveToDB();
-                    mail->AddItem(mailItem);
-                }
-            }
-
-            last_id = id;
-            last_receiver_guid = receiver_guid;
-
-        }
-        while( result->NextRow() );
-
-        // we only send a mail when mail_id!=last_mail_id, so we need to send the very last mail here:
-        if (last_id != 0)
-        {
-            // send last mail
-            DETAIL_LOG("EXTMAIL> Sending mail with id %u to character with guid %d", last_id, last_receiver_guid);
-
-            mail->SendMailTo( MailReceiver(last_receiver_guid), MailSender(MAIL_NORMAL, 0, MAIL_STATIONERY_GM), MAIL_CHECK_MASK_RETURNED);
-            delete mail;
-            CharacterDatabase.PExecute("DELETE mail_external AS e, mail_external_items AS i FROM mail_external AS e, mail_external_items AS i WHERE i.mail_id = e.id AND e.id = %u;", last_id);
-            DETAIL_LOG("EXTMAIL> Mail sent");
-        }
-    }
-
-    delete result;
-    DETAIL_LOG("EXTMAIL> All Mails Sent...");
  
+    do
+    {
+        Field *fields = result->Fetch();
+        uint32 id = fields[0].GetUInt32();
+        uint64 receiver_guid = fields[1].GetUInt64();
+        std::string subject = fields[2].GetString();
+        std::string message = fields[3].GetString();
+        uint32 money = fields[4].GetUInt32();
+        uint32 ItemID = fields[5].GetUInt32();
+        uint32 ItemCount = fields[6].GetUInt32();
+ 
+        if (Player *receiver = sObjectMgr.GetPlayer(receiver_guid))
+        {
+            sLog.outString("<EXTERNAL MAIL> Sending mail to %u, Item: %u", receiver_guid, ItemID);
+
+            if (ItemID && ItemCount < 1)
+            {
+                sLog.outString("<EXTERNAL MAIL> Warning: invalid ItemCount of %u, setting to 1", ItemCount);
+                ItemCount = 1;
+            }
+            Item* ToMailItem = ItemID ? Item::CreateItem(ItemID, ItemCount, receiver) : NULL;
+ 
+            if (ToMailItem)
+            {
+                ToMailItem->SaveToDB();
+ 
+                MailDraft(subject, message)
+                    .AddItem(ToMailItem)
+                    .SetMoney(money)
+                    .SendMailTo(MailReceiver(receiver), MailSender(MAIL_NORMAL, uint32(0), MAIL_STATIONERY_GM), MAIL_CHECK_MASK_RETURNED);
+            }
+            else
+            {
+                MailDraft(subject, message)
+                    .SetMoney(money)
+                    .SendMailTo(MailReceiver(receiver), MailSender(MAIL_NORMAL, uint32(0), MAIL_STATIONERY_GM), MAIL_CHECK_MASK_RETURNED);
+            }
+            CharacterDatabase.PExecute("DELETE FROM mail_external WHERE id=%u", id);
+        }
+        else
+            sLog.outString("<EXTERNAL MAIL> Player %u not in game, skip mail!", receiver_guid);
+    } while(result->NextRow());
+ 
+    delete result;
+    sLog.outString("<EXTERNAL MAIL> All Mails Sent.");
 } 
-*/
+
 /*! @} */

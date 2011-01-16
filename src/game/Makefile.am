@@ -200,13 +200,13 @@ libmangosgame_a_SOURCES = \
 	MotionMaster.cpp \
 	MotionMaster.h \
     MoveMap.cpp \
-	MoveMap.h \
+    MoveMap.h \
 	MoveMapSharedDefines.h \
-	MovementGenerator.cpp \
-	MovementGenerator.h \
-	MovementGeneratorImpl.h \
-	MovementHandler.cpp \
-	NPCHandler.cpp \
+    MovementGenerator.cpp \
+    MovementGenerator.h \
+    MovementGeneratorImpl.h \
+    MovementHandler.cpp \
+    NPCHandler.cpp \
 	NPCHandler.h \
 	NullCreatureAI.cpp \
 	NullCreatureAI.h \

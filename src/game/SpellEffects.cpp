@@ -1616,10 +1616,17 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     return;
                 }
                 case 55161:                                 // Q: DataBase mining Credit
-				case 59728:
+                case 59728:
                 {
                     if(m_caster->GetTypeId() == TYPEID_PLAYER)
                         ((Player*)m_caster)->KilledMonsterCredit(29746);
+
+                    return;
+                }
+                case 46485:    // Quest credit for Quest Souls of the Decursed (11899) 
+                {
+                    if(m_caster->GetTypeId() == TYPEID_PLAYER)
+                        ((Player*)m_caster)->KilledMonsterCredit(25814);
 
                     return;
                 }
@@ -1705,23 +1712,6 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         if (const SpellCastTimesEntry *pCastTime = sSpellCastTimesStore.LookupEntry(pSpell->CastingTimeIndex))
                             creatureTarget->ForcedDespawn(pCastTime->CastTime + 1);
                     }
-                    return;
-                }
-                case 46485:                                 // Greatmother's Soulcatcher
-                {
-                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT)
-                        return;
-
-                    if (const SpellEntry *pSpell = sSpellStore.LookupEntry(46486))
-                    {
-                        m_caster->CastSpell(unitTarget, pSpell, true);
-
-                        if (const SpellEntry *pSpellCredit = sSpellStore.LookupEntry(pSpell->EffectMiscValue[EFFECT_INDEX_0]))
-                            ((Player*)m_caster)->KilledMonsterCredit(pSpellCredit->EffectMiscValue[EFFECT_INDEX_0]);
-
-                        ((Creature*)unitTarget)->ForcedDespawn();
-                    }
-
                     return;
                 }
                 case 46606:                                 // Plague Canister Dummy

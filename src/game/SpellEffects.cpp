@@ -1615,6 +1615,14 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     return;
                 }
+                case 55161:                                 // Q: DataBase mining Credit
+				case 59728:
+                {
+                    if(m_caster->GetTypeId() == TYPEID_PLAYER)
+                        ((Player*)m_caster)->KilledMonsterCredit(29746);
+
+                    return;
+                }
                 case 45692:                                 // Use Tuskarr Torch (for Quest: Burn in Effigy)
                 {
                     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT)
@@ -7355,6 +7363,8 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     if (!m_caster || m_caster->GetTypeId() != TYPEID_UNIT)
                         return;
                     m_caster->RemoveAurasDueToSpell(530);
+					//m_caster->RemoveAurasDueToSpell(51923); -- need to test this to remove crazy speed on eye
+					//m_caster->RemoveAurasDueToSpell(51852); -- need to test this to remove crazy speed on eye
                     return;
                 }
                 case 51962:                                 //Offer Jungle Punch

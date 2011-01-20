@@ -16,9 +16,8 @@ TO_DO ++++++++++++++++++++++++
 
 7. needs to test each player class and race spell and talent & and start fixing or ect what doesnt work 
 
-8. Develop a 4.0.0 patch 
+8.  
 
-9. Fix extrnal mail system
 
 =======================
 BUGS_&_ECT ++++++++++++++
@@ -32,13 +31,9 @@ BUGS_&_ECT ++++++++++++++
 ==========================
 In_Progress_Testing ++++++
 ==========================
-1. MM_maps _12_18_2010_ Still Testing 1_1_2011
+1. MM_maps _12_18_2010_ Still Testing 1_20_2011
 
-2. WarHead's Jail _12_18_2010_ Still Testing 1_1_2011
-
-3. MySQL client lib 6.0.0
-
-4. enhancements to grid load system
+2. WarHead's Jail _12_18_2010_ Still Testing 1_20_2011
 
 ===============================
 Instances_Tested ++++++++++++++
@@ -49,7 +44,7 @@ nexus/nexus_______12_17_2010===================  instance and events are working
 ==============================
 Quests_Testing_&_Stuff +++++++
 ==============================
-Eye of acherus___ 1_1_2011  =============  Quest and eye is working
+Eye of acherus___ 1_20_2011  =============  Quest and eye is working
 Blood_elf Starting Area Quest (up to where you leave for ghostlands)_____12_17_2010 ===  i have 5 quest left to test  but so for only had to fix 2 quest
 
 ========================

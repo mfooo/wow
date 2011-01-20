@@ -8036,8 +8036,8 @@ void Aura::PeriodicDummyTick()
         case SPELLFAMILY_MAGE:
         {
             // Mirror Image
-//            if (spell->Id == 55342)
-//                return;
+            if (spell->Id == 55342)
+                return;
             break;
         }
         case SPELLFAMILY_DRUID:

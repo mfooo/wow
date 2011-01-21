@@ -1789,6 +1789,25 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     unitTarget->CastSpell(unitTarget, 47178, true);
                     return;
                 }
+                case 47305:                                 // Potent Explosive Charge
+                {
+                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT)
+                        return;
+
+                    // only if below 80% hp
+                    if (unitTarget->GetHealthPercent() > 80.0f)
+                        return;
+
+                    // Issues with explosion animation (remove insta kill spell resolves the issue)
+
+                    // Quest - Jormungar Explosion Spell Spawner
+                    unitTarget->CastSpell(unitTarget, 47311, true);
+
+                    // Potent Explosive Charge
+                    unitTarget->CastSpell(unitTarget, 47306, true);
+
+                    return;
+                }
                 case 49357:                                 // Brewfest Mount Transformation
                 {
                     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -2170,8 +2189,10 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         if (!factionEntry)
                             return;
 
-                        // set rep to baserep + basepoints (expecting spillover for oposite faction -> become hated)
-                        pPlayer->GetReputationMgr().SetReputation(factionEntry, rep_change);
+                        // Set rep to baserep + basepoints (expecting spillover for oposite faction -> become hated)
+                        // Not when player already has equal or higher rep with this faction
+                        if (pPlayer->GetReputationMgr().GetBaseReputation(factionEntry) < rep_change)
+                            pPlayer->GetReputationMgr().SetReputation(factionEntry, rep_change);
 
                         // EFFECT_INDEX_2 most likely update at war state, we already handle this in SetReputation
                     }
@@ -5230,26 +5251,17 @@ void Spell::EffectDistract(SpellEffectIndex /*eff_idx*/)
         return;
 
     // target must be OK to do this
-    if( unitTarget->hasUnitState(UNIT_STAT_CAN_NOT_REACT) )
+    if (unitTarget->hasUnitState(UNIT_STAT_CAN_NOT_REACT))
         return;
 
     float angle = unitTarget->GetAngle(m_targets.m_destX, m_targets.m_destY);
 
-    if ( unitTarget->GetTypeId() == TYPEID_PLAYER )
-    {
-        // For players just turn them
-        WorldPacket data;
-        ((Player*)unitTarget)->BuildTeleportAckMsg(&data, unitTarget->GetPositionX(), unitTarget->GetPositionY(), unitTarget->GetPositionZ(), angle);
-        ((Player*)unitTarget)->GetSession()->SendPacket( &data );
-        ((Player*)unitTarget)->SetPosition(unitTarget->GetPositionX(), unitTarget->GetPositionY(), unitTarget->GetPositionZ(), angle, false);
-    }
-    else
-    {
-        // Set creature Distracted, Stop it, And turn it
-        unitTarget->SetOrientation(angle);
-        unitTarget->StopMoving();
+    unitTarget->clearUnitState(UNIT_STAT_MOVING);
+    unitTarget->SetOrientation(angle);
+    unitTarget->SendMonsterMove(unitTarget->GetPositionX(), unitTarget->GetPositionY(), unitTarget->GetPositionZ(), SPLINETYPE_FACINGANGLE, SPLINEFLAG_WALKMODE, 0, NULL, angle);
+
+    if (unitTarget->GetTypeId() == TYPEID_UNIT)
         unitTarget->GetMotionMaster()->MoveDistract(damage * IN_MILLISECONDS);
-    }
 }
 
 void Spell::EffectPickPocket(SpellEffectIndex /*eff_idx*/)
@@ -7122,6 +7134,24 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     }
                     //Dispel Triggering aura
                     m_caster->RemoveAurasDueToSpell(47331);
+					return;
+				}
+                case 47311:                                 // Quest - Jormungar Explosion Spell Spawner
+                {
+                    // Summons npc's. They are expected to summon GO from 47315
+                    // but there is no way to get the summoned, to trigger a spell
+                    // cast (workaround can be done with ai script).
+
+                    // Quest - Jormungar Explosion Summon Object
+                    for(int i = 0; i < 2; ++i)
+                        m_caster->CastSpell(m_caster, 47309, true);
+
+                    for(int i = 0; i < 2; ++i)
+                        m_caster->CastSpell(m_caster, 47924, true);
+
+                    for(int i = 0; i < 2; ++i)
+                        m_caster->CastSpell(m_caster, 47925, true);
+
                     return;
                 }
                 case 47393:                                 // The Focus on the Beach: Quest Completion Script

@@ -616,7 +616,15 @@ bool ChatHandler::HandleGonameCommand(char* args)
 // added by Lorenor
 bool ChatHandler::HandlePhaseCommand(char* args)
 {
-    int32 phase = 1;
+	Player* target;
+	Player* player;
+    ObjectGuid target_guid;
+    std::string target_name;
+    
+	if (!ExtractPlayerTarget(&args, &target, &target_guid, &target_name))
+        return false; 
+
+	int32 phase = 1;
     char* nameStr = NULL;
 
 	if (!*args)
@@ -642,13 +650,6 @@ bool ChatHandler::HandlePhaseCommand(char* args)
         return false;
     }
 
-    Player* player;
-    uint64 player_guid;
-    std::string player_name;
-
-	if (!ExtractPlayerTarget(&nameStr, &player, &player_guid, &player_name))
-        return false;
-
     if (!player)
     {
         SendSysMessage("Can phase only online players.");
@@ -663,7 +664,7 @@ bool ChatHandler::HandlePhaseCommand(char* args)
         return false;
     }
 
-    if (HasLowerSecurity(player, 0))
+    if (HasLowerSecurity(player))
         return false;
 
     player->SetPhaseMask(phase,true);

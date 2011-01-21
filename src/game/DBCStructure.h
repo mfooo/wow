@@ -481,12 +481,18 @@ struct AchievementCriteriaEntry
 
         struct
         {
+            uint32  unused;
+            uint32  dungeonsComplete;
+        } use_lfg;
+
+        struct
+        {
             uint32  value;                                  // 3 main requirement
             uint32  count;                                  // 4 main requirement count
             uint32  additionalRequirement1_type;            // 5 additional requirement 1 type
             uint32  additionalRequirement1_value;           // 6 additional requirement 1 value
-            uint32  additionalRequirement2_type;            // 7 additional requirement 2 type
-            uint32  additionalRequirement2_value;           // 8 additional requirement 1 value
+        //    uint32  additionalRequirement2_type;            // 7 additional requirement 2 type
+        //    uint32  additionalRequirement2_value;           // 8 additional requirement 1 value
         } raw;
     };
     char*  name[16];                                        // 9-24
@@ -1128,6 +1134,29 @@ struct ItemSetEntry
 };
 
 #define MAX_LOCK_CASE 8
+
+struct LFGDungeonEntry
+{
+    uint32  ID;                                             // 0
+    //char*   name[16];                                     // 1-17 Name lang
+    uint32  minlevel;                                       // 18
+    uint32  maxlevel;                                       // 19
+    uint32  reclevel;                                       // 20
+    uint32  recminlevel;                                    // 21
+    uint32  recmaxlevel;                                    // 22
+    int32  map;                                             // 23
+    uint32  difficulty;                                     // 24
+    //uint32  unk;                                          // 25
+    uint32  type;                                           // 26
+    //uint32  unk2;                                         // 27
+    //char*   unk3;                                         // 28
+    uint32  expansion;                                      // 29
+    //uint32  unk4;                                         // 30
+    uint32  grouptype;                                      // 31
+    //char*   desc[16];                                     // 32-47 Description
+    // Helpers
+    uint32 Entry() const { return ID + (type << 24); }
+};
 
 struct LockEntry
 {

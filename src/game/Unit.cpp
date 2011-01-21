@@ -9360,7 +9360,7 @@ bool Unit::SelectHostileTarget()
         {
             SetInFront(target);
             ((Creature*)this)->AI()->AttackStart(target);
-			
+
             // check if currently selected target is reachable
             // NOTE: path alrteady generated from AttackStart()
             if(!GetMotionMaster()->operator->()->IsReachable())
@@ -9386,6 +9386,7 @@ bool Unit::SelectHostileTarget()
 
                 return false;
             }
+
         }
         return true;
     }
@@ -11709,6 +11710,7 @@ void Unit::MonsterMoveByPath(float x, float y, float z, uint32 speed, bool smoot
     pointPath[size-1].x = x;
     pointPath[size-1].y = y;
     pointPath[size-1].z = z;
+
     uint32 traveltime = uint32(pointPath.GetTotalLength()/float(speed));
     MonsterMoveByPath(pointPath, 1, pointPath.size(), traveltime);
 }

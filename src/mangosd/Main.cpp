@@ -152,18 +152,33 @@ extern int main(int argc, char **argv)
     sLog.outString( "%s [world-daemon]", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID) );
     sLog.outString( "<Ctrl-C> to stop.\n\n" );
 
-    sLog.outTitle( "               P   R   O   J   E   C   T __ The Infinity Project __           ");	
-    sLog.outTitle( "              A Special Made Core For & By FallenAngelX           I            ");	
-    sLog.outTitle( ":::::::::      :::     :::        :::     ::::::::   :::::::::     N   P       ");
-    sLog.outTitle( ":+:          :+: :+:   :+:        :+:     :+:        :+:    :+:     F   R      ");
-    sLog.outTitle( "+:+         +:+   +:+  +:+        +:+     +:+        +:+     +:+     I   O     ");
-    sLog.outTitle( "+:+::::::   #++:++#++: +#+        +#+     +#++:++#   +#+     +#+      N   J    ");
-    sLog.outTitle( "+:+        +#+     +#+ +#+        +#+     +#+        +#+     +#+       I   E   ");
-    sLog.outTitle( "#+#        #+#     #+# #+#        #+#     #+#        #+#     #+#        T   C  ");
-    sLog.outTitle( "###        ###     ### #######    ####### ########   ###     ###         Y   T ");
-    sLog.outTitle( "Special Made Core By and for The Players                                       ");	
-    sLog.outTitle( "Github.com/fallenangelX/(Retired Developer From Hellscream & Dark_Ice)         ");
-    sLog.outTitle( "Project The InFinity Project  Core Developed orginally for TheFallen_Server    ");
+    sLog.outTitle( "XXXXXXXXXXXXXXXX                                                        ");
+	sLog.outTitle( "XXXXXXXXXXXXXXXXXx                                                      ");
+	sLog.outTitle( "IXXXxxxxxxxxxxxxxxx                                                     ");
+    sLog.outTitle( "IXX             xxxx                                                    ");
+    sLog.outTitle( "IXX.              xXX                                                   ");
+    sLog.outTitle( "IXX                xXX                                                  ");
+    sLog.outTitle( "IXX                xXX                                                  ");
+    sLog.outTitle( "IXX                xXX                                                  ");
+    sLog.outTitle( "IXX                xXX                                                  ");
+    sLog.outTitle( "IXX                xXX                                                  ");
+    sLog.outTitle( "IXX                xXX                                                  ");
+    sLog.outTitle( "IXX                xXX													");
+    sLog.outTitle( "IXXXXXXXXXXXXXXXXXxXX                                                   ");
+    sLog.outTitle( "IXXXXXXXXXXXXXXXXXXXX                                                   ");
+    sLog.outTitle( "IXXXXXXXXXXXXXXXXXXXX                                                   ");
+    sLog.outTitle( "IXXx            xxxXX                                                   ");
+    sLog.outTitle( "IXXX             xxxXX                                                  ");
+    sLog.outTitle( "IXXX                xXX                                                 ");
+    sLog.outTitle( "IXXX                xXX                                                 ");
+    sLog.outTitle( "IXXX                xXXZ   Xxx          xxX            Xxx          xxX ");
+    sLog.outTitle( "IXXX                xXXZ    XXXx      xXXX    XxxxxX    XXXx      xXXX  ");
+    sLog.outTitle( "IXXX                xXXZZ    XXx  xx  xXX    XXxxxxXX    XXx  xx  xXX   ");
+    sLog.outTitle( "IXXX                xXXZZZ   XXx  xx  xXX   XX      XX   XXx  xx  xXX   ");
+    sLog.outTitle( "IXXX                xxXXXZ   XXx  xx  xXX   XX      XX   XXx  xx  xXX	");
+    sLog.outTitle( "XXXX                xXXXXZ   XXx  xx  xXX   XX      XX   XXx  xx  xXX   ");
+    sLog.outTitle( "XXXXXXX             xXXXXZZ  XXxxxxxxxxXX    XXxxxxXX    XXxxxxxxxxXX   ");  
+    sLog.outTitle( "XXXXXXX             xXXXXZZ  XXxXXXXXXxXX     xxxxxx     XXxXXXXXXxXX   ");
 
     sLog.outString("Using configuration file %s.", cfg_file);
 

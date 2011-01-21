@@ -86,6 +86,20 @@ enum eScriptCommand
     SCRIPT_COMMAND_SET_RUN                  = 25,           // source=any, target=creature
                                                             // datalong= bool 0=off, 1=on
                                                             // datalong2=creature entry, datalong3=search radius
+    // added by Lorenor
+    SCRIPT_COMMAND_ADD_AURA                 = 70,           // datalong = spell_id
+                                                            // source (datalong2!=0) or target (datalong2==0) unit
+                                                            // datalong3=duration
+    // added by Lorenor
+    // SCRIPT_COMMAND_SUMMON_TEMP              = 71,           // source = any (summoner), datalong=creature or GO entry
+                                                            // datalong2=despawn_delay
+                                                            // datalong3 - 0 if creature, 1 if GO
+    // added by Lorenor
+    SCRIPT_COMMAND_SET_PHASE_GO_NPC         = 72,           // datalong = guid
+                                                            // datalong2 = phasemask
+                                                            // datalong3 = 0 - gameobject, 1 - creature
+    // added by Lorenor
+    SCRIPT_COMMAND_PHASE_PLAYER             = 73,           // datalong = phasemask
 };
 
 #define MAX_TEXT_ID 4                                       // used for SCRIPT_COMMAND_TALK
@@ -262,6 +276,38 @@ struct ScriptInfo
             uint32 creatureEntry;                           // datalong2
             uint32 searchRadius;                            // datalong3
         } run;
+
+		// added by Lorenor
+        struct                                              // SCRIPT_COMMAND_ADD_AURA (70)
+        {
+            uint32 spellId;                                 // datalong
+            uint32 isSourceTarget;                          // datalong2
+            uint32 auraDuration;                            // datalong3
+        } addAura;
+
+        // added by Lorenor
+        /*struct                                              // SCRIPT_COMMAND_SUMMON_TEMP (71)
+        {
+            uint32 entry;                                   // datalong
+            uint32 despawnDelay;                            // datalong2
+            uint32 isGameobject;                            // datalong3
+            uint32 unused;                                  // datalong4
+            uint32 flags;                                   // data_flags
+        } summonTemp;*/
+
+        // added by Lorenor
+        struct                                              // SCRIPT_COMMAND_SET_PHASE_GO_NPC (72)
+        {
+            uint32 guid;                                    // datalong
+            uint32 phaseMask;                               // datalong2
+            uint32 isCreature;                              // datalong3: 0 - gameobject, 1 - creature
+        } setPhase;
+
+        // added by Lorenor
+        struct                                              // SCRIPT_COMMAND_PHASE_PLAYER (73)
+        {
+            uint32 phaseMask;                               // datalong
+        } phasePlayer;
 
         struct
         {

@@ -733,6 +733,8 @@ ChatCommand * ChatHandler::getCommandTable()
         { "jailinfo",       SEC_PLAYER,         true,  &ChatHandler::HandleJailInfoCommand,            "", NULL },
         { "unjail",         SEC_MODERATOR,      false, &ChatHandler::HandleUnJailCommand,              "", NULL },
         { "jailreload",     SEC_ADMINISTRATOR,  false, &ChatHandler::HandleJailReloadCommand,          "", NULL },
+		// added by Lorenor
+        { "phase",          SEC_GAMEMASTER,     true,  &ChatHandler::HandlePhaseCommand,               "", NULL },
         { "tele",           SEC_MODERATOR,      true,  NULL,                                           "", teleCommandTable     },
         { "titles",         SEC_GAMEMASTER,     false, NULL,                                           "", titlesCommandTable   },
         { "trigger",        SEC_GAMEMASTER,     false, NULL,                                           "", triggerCommandTable  },

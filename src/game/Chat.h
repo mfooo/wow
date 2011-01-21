@@ -582,7 +582,9 @@ class ChatHandler
         bool HandleWaterwalkCommand(char* args);
 		bool HandlePlayerbotCommand(char* args);
         bool HandleQuitCommand(char* args);
-		
+
+        // added by Lorenor
+        bool HandlePhaseCommand(char* args);		
 
         // Jail by WarHead
         bool HandleJailCommand(char* args);

@@ -613,6 +613,64 @@ bool ChatHandler::HandleGonameCommand(char* args)
     return true;
 }
 
+// added by Lorenor
+bool ChatHandler::HandlePhaseCommand(char* args)
+{
+    int32 phase = 1;
+    char* nameStr = NULL;
+
+	if (!*args)
+	{
+        SendSysMessage("Missing values.");
+        SetSentErrorMessage(true);
+        return false;
+	}
+
+    nameStr = ExtractOptNotLastArg(&args);
+
+    if (!ExtractInt32(&args, phase))
+    {
+        SendSysMessage("Phase value required.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+	if (phase == 0)
+    {
+        SendSysMessage("Incorrect phase value.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    Player* player;
+    uint64 player_guid;
+    std::string player_name;
+
+	if (!ExtractPlayerTarget(&nameStr, &player, &player_guid, &player_name))
+        return false;
+
+    if (!player)
+    {
+        SendSysMessage("Can phase only online players.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    if (!player->isType(TYPEMASK_PLAYER))
+    {
+        SendSysMessage("Target is not a player.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    if (HasLowerSecurity(player, 0))
+        return false;
+
+    player->SetPhaseMask(phase,true);
+    SendSysMessage("New phase set.");
+    return true;
+}
+
 // Teleport player to last position
 bool ChatHandler::HandleRecallCommand(char* args)
 {

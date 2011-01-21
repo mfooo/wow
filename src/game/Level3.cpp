@@ -4149,6 +4149,11 @@ bool ChatHandler::HandleNpcInfoCommand(char* /*args*/)
     }
 
     ShowNpcOrGoSpawnInformation<Creature>(target->GetDBTableGUIDLow());
+    // added by Lorenor
+    SendSysMessage("Creature phasemask:");
+    char *phaseStr;
+    itoa(target->GetPhaseMask(), phaseStr, 10);
+    SendSysMessage(phaseStr);
     return true;
 }
 

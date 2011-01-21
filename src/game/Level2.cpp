@@ -880,6 +880,13 @@ bool ChatHandler::HandleGameObjectTargetCommand(char* args)
         PSendSysMessage(LANG_COMMAND_RAWPAWNTIMES, defRespawnDelayStr.c_str(),curRespawnDelayStr.c_str());
 
         ShowNpcOrGoSpawnInformation<GameObject>(target->GetDBTableGUIDLow());
+
+		// added by Lorenor, crashes
+        /*SendSysMessage("Gameobject phasemask:");
+        char *phaseStr;
+        itoa(target->GetPhaseMask(), phaseStr, 10);
+        SendSysMessage(phaseStr);*/
+
     }
     return true;
 }
@@ -2540,6 +2547,11 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     uint32 copp = (money % GOLD) % SILVER;
     PSendSysMessage(LANG_PINFO_LEVEL,  timeStr.c_str(), level, gold,silv,copp);
 
+	// added by Lorenor
+    SendSysMessage("Player phasemask:");
+    char *phaseStr;
+    itoa(target->GetPhaseMask(), phaseStr, 10);
+    SendSysMessage(phaseStr);
     return true;
 }
 

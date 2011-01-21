@@ -2228,7 +2228,9 @@ void Map::ScriptsProcess()
                 Unit* caster = (Unit*)source;
 
                 GameObject *door = NULL;
-                int32 time_to_close = step.script->openDoor.resetDelay < 15 ? 15 : step.script->openDoor.resetDelay;
+                int32 time_to_close = step.script->openDoor.resetDelay < 1 ? 1 : step.script->openDoor.resetDelay;
+                    //edit by Lorenor, original code:
+                    //int32 time_to_close = step.script->openDoor.resetDelay < 15 ? 15 : step.script->openDoor.resetDelay;
 
                 MaNGOS::GameObjectWithDbGUIDCheck go_check(*caster, step.script->openDoor.goGuid);
                 MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck> checker(door, go_check);
@@ -2279,7 +2281,9 @@ void Map::ScriptsProcess()
                 Unit* caster = (Unit*)source;
 
                 GameObject *door = NULL;
-                int32 time_to_open = step.script->closeDoor.resetDelay < 15 ? 15 : step.script->closeDoor.resetDelay;
+                int32 time_to_open = step.script->closeDoor.resetDelay < 1 ? 1 : step.script->closeDoor.resetDelay;
+                    //edit by Lorenor, original code:
+                    //int32 time_to_open = step.script->closeDoor.resetDelay < 15 ? 15 : step.script->closeDoor.resetDelay;
 
                 MaNGOS::GameObjectWithDbGUIDCheck go_check(*caster, step.script->closeDoor.goGuid);
                 MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck> checker(door, go_check);
@@ -2831,6 +2835,190 @@ void Map::ScriptsProcess()
 
                 break;
             }
+            // added by Lorenor
+            case SCRIPT_COMMAND_ADD_AURA:
+            {
+                Object* cmdTarget = step.script->addAura.isSourceTarget ? source : target;
+
+                if (!cmdTarget)
+                {
+                    sLog.outError("SCRIPT_COMMAND_ADD_AURA (script id %u) call for NULL %s.", step.script->id, step.script->addAura.isSourceTarget ? "source" : "target");
+                    break;
+                }
+
+                if (!cmdTarget->isType(TYPEMASK_UNIT))
+                {
+                    sLog.outError("SCRIPT_COMMAND_ADD_AURA (script id %u) %s isn't unit (TypeId: %u), skipping.", step.script->id, step.script->addAura.isSourceTarget ? "source" : "target",cmdTarget->GetTypeId());
+                    break;
+                }
+
+                ((Unit*)cmdTarget)->_AddAura(step.script->addAura.spellId, step.script->addAura.auraDuration);
+                break;
+            }
+            // added by Lorenor
+            /* case SCRIPT_COMMAND_SUMMON_TEMP:
+            {
+                // disabled until GO case fully implemented; doesn't despawn summoned GO
+                sLog.outError("SCRIPT_COMMAND_SUMMON_TEMP currently disabled.", step.script->id);
+                break;
+
+                if (!step.script->summonTemp.entry)
+                {
+                    sLog.outError("SCRIPT_COMMAND_SUMMON_TEMP (script id %u) call for NULL creature or GO.", step.script->id);
+                    break;
+                }
+
+                if (!source)
+                {
+                    sLog.outError("SCRIPT_COMMAND_SUMMON_TEMP (script id %u) call for NULL world object.", step.script->id);
+                    break;
+                }
+
+                if (!source->isType(TYPEMASK_WORLDOBJECT))
+                {
+                    sLog.outError("SCRIPT_COMMAND_SUMMON_TEMP (script id %u) call for non-WorldObject (TypeId: %u), skipping.", step.script->id, source->GetTypeId());
+                    break;
+                }
+
+                WorldObject* summoner = (WorldObject*)source;
+
+                float x = step.script->x;
+                float y = step.script->y;
+                float z = step.script->z;
+                float o = step.script->o;
+
+                if (step.script->summonTemp.isGameobject)
+                {
+                    GameObject* pGameobject = summoner->SummonGameobject(step.script->summonTemp.entry, x, y, z, o, step.script->summonTemp.despawnDelay);
+                    if (!pGameobject)
+                    {
+                        sLog.outError("SCRIPT_COMMAND_SUMMON_TEMP (script id %u) failed for gameobject (entry: %u).", step.script->id, step.script->summonTemp.entry);
+                        break;
+                    }
+                }
+                else if (!step.script->summonTemp.isGameobject)
+                {
+                    Creature* pCreature = summoner->SummonCreature(step.script->summonTemp.entry, x, y, z, o, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, step.script->summonTemp.despawnDelay, (step.script->summonTemp.flags & 0x01) ? true: false);
+                    if (!pCreature)
+                    {
+                        sLog.outError("SCRIPT_COMMAND_SUMMON_TEMP (script id %u) failed for creature (entry: %u).", step.script->id, step.script->summonTemp.entry);
+                        break;
+                    }
+                }
+
+                break;
+            } */
+            // added by Lorenor
+            case SCRIPT_COMMAND_SET_PHASE_GO_NPC: // NPC not working yet
+            {
+                if (!source)
+                {
+                    sLog.outError("SCRIPT_COMMAND_SET_PHASE_GO_NPC must have a source.");
+                    break;
+                }
+
+                if (!source->isType(TYPEMASK_WORLDOBJECT))
+                {
+                    sLog.outError("SCRIPT_COMMAND_SET_PHASE_GO_NPC (script id %u) called by a non-WorldObject (TypeId: %u), skipping.", step.script->id, source->GetTypeId());
+                    break;
+                }
+
+                if (!target)
+                {
+                    sLog.outError("SCRIPT_COMMAND_SET_PHASE_GO_NPC call for NULL target.");
+                    break;
+                }
+
+                /*if (!target->isType(TYPEMASK_PLAYER) || !target->isType(TYPEMASK_GAMEOBJECT))    // only player or GO
+                {
+                    sLog.outError("SCRIPT_COMMAND_SET_PHASE_GO_NPC (script id %u) must have a player or GO as target (TypeId: %u), skipping.", step.script->id, source->GetTypeId());
+                    break;
+                }*/
+
+                if (!step.script->setPhase.isCreature)
+                {
+                    Player* player = (Player*)target;
+                    uint32 playerPhase = player->GetPhaseMask();    // store player's original phase
+                    player->SetPhaseMask(PHASEMASK_ANYWHERE,true);    // temporarily enable all phases for player; otherwise returns NULL phasedObject (and breaks) if player and GO not in same phase
+
+                    GameObject *phasedObject = NULL;
+                    MaNGOS::GameObjectWithDbGUIDCheck go_check(*player, step.script->setPhase.guid);
+                    MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck> checker(phasedObject, go_check);
+                    Cell::VisitGridObjects(player, checker, GetVisibilityDistance());
+
+                    player->SetPhaseMask(playerPhase,true);    // MUST revert player's phase back to original before any break
+
+                    if (!phasedObject)
+                    {
+                        sLog.outError("SCRIPT_COMMAND_SET_PHASE_GO_NPC (script id %u) failed [phasedObject==NULL] for gameobject(guid: %u) for phase.", step.script->id, step.script->setPhase.guid);
+                        break;
+                    }
+
+                    phasedObject->SetPhaseMask(step.script->setPhase.phaseMask,true);
+                    phasedObject->SaveToDB();
+                }
+                /*else if (step.script->setPhase.isCreature)
+                {
+                    Player* player = (Player*)target;
+                    uint32 playerPhase = player->GetPhaseMask();
+                    player->SetPhaseMask(PHASEMASK_ANYWHERE,true);
+
+                    Creature *phasedCreature = NULL;
+                    uint32 searchRadius = 1000;    // would prefer not using this method
+                    MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck u_check(*player, step.script->setPhase.guid, true, searchRadius);
+                    MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(phasedCreature, u_check);
+                    Cell::VisitGridObjects(player, searcher, searchRadius);
+
+                    player->SetPhaseMask(playerPhase,true);
+
+                    if (!phasedCreature)
+                    {
+                        sLog.outError("SCRIPT_COMMAND_SET_PHASE_GO_NPC (script id %u) failed [phasedCreature==NULL] for gameobject(guid: %u) for phase.", step.script->id, step.script->setPhase.guid);
+                        break;
+                    }
+
+                    phasedCreature->SetPhaseMask(step.script->setPhase.phaseMask,true);
+                    phasedCreature->SaveToDB();
+                } */
+
+                break;
+            }
+            case SCRIPT_COMMAND_PHASE_PLAYER:
+            {
+                if (!source)
+                {
+                    sLog.outError("SCRIPT_COMMAND_PHASE_PLAYER must have a source.");
+                    break;
+                }
+
+                if (!source->isType(TYPEMASK_WORLDOBJECT))
+                {
+                    sLog.outError("SCRIPT_COMMAND_PHASE_PLAYER (script id %u) called by a non-WorldObject (TypeId: %u), skipping.", step.script->id, source->GetTypeId());
+                    break;
+                }
+
+                if (!target)
+                {
+                    sLog.outError("SCRIPT_COMMAND_PHASE_PLAYER call for NULL target.");
+                    break;
+                }
+
+                if (!target->isType(TYPEMASK_PLAYER))    // only player
+                {
+                    sLog.outError("SCRIPT_COMMAND_PHASE_PLAYER (script id %u) must have a player as target (TypeId: %u), skipping.", step.script->id, source->GetTypeId());
+                    break;
+                }
+                    Player* player = (Player*)target;
+
+                    if (!player)
+                    {
+                        break;
+                    }
+
+                    player->SetPhaseMask(step.script->phasePlayer.phaseMask,true);
+                    break;
+
+            }
             default:
                 sLog.outError("Unknown SCRIPT_COMMAND_ %u called for script id %u.",step.script->command, step.script->id);
                 break;
@@ -2842,6 +3030,7 @@ void Map::ScriptsProcess()
         iter = m_scriptSchedule.begin();
     }
 }
+
 
 /**
  * Function return player that in world at CURRENT map

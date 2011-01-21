@@ -21,6 +21,7 @@
 #include "ObjectMgr.h"
 #include "Vehicle.h"
 #include "Unit.h"
+#include "CreatureAI.h"
 #include "Util.h"
 #include "WorldPacket.h"
 #include "CreatureAI.h"
@@ -240,6 +241,13 @@ bool VehicleKit::AddPassenger(Unit *passenger, int8 seatId)
     }
 
     UpdateFreeSeatCount();
+
+    if (m_pBase->GetTypeId() == TYPEID_UNIT)
+    {
+        if (((Creature*)m_pBase)->AI())
+            ((Creature*)m_pBase)->AI()->PassengerBoarded(passenger, seat->first, true);
+    }
+
     return true;
 }
 
@@ -306,8 +314,10 @@ void VehicleKit::RemovePassenger(Unit *passenger)
     UpdateFreeSeatCount();
 
     if (m_pBase->GetTypeId() == TYPEID_UNIT)
+    {
         if (((Creature*)m_pBase)->AI())
-            ((Creature*)m_pBase)->AI()->PassengerBoarded(passenger, seat->first, true);
+            ((Creature*)m_pBase)->AI()->PassengerBoarded(passenger, seat->first, false);
+    }
 }
 
 void VehicleKit::Reset()

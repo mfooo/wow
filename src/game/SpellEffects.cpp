@@ -7250,6 +7250,17 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
                     //cast back Trollgore -> Taunt Invider 
                     unitTarget->CastSpell(m_caster, 49406, true);
+					return;
+				}
+                case 48917:                                 // Who Are They: Cast from Questgiver
+                {
+                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
+                        return;
+
+                    // Male Shadowy Disguise / Female Shadowy Disguise
+                    unitTarget->CastSpell(unitTarget, unitTarget->getGender() == GENDER_MALE ? 38080 : 38081, true);
+                    // Shadowy Disguise
+                    unitTarget->CastSpell(unitTarget, 32756, true);
                     return;
                 }
                 case 50217:                                 // The Cleansing: Script Effect Player Cast Mirror Image

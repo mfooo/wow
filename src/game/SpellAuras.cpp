@@ -5083,6 +5083,10 @@ void Aura::HandleAuraModStalked(bool apply, bool /*Real*/)
         GetTarget()->SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TRACK_UNIT);
     else
         GetTarget()->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TRACK_UNIT);
+
+	// assassins mark fix 
+    if(m_removeMode == AURA_REMOVE_BY_DEFAULT && m_duration <= 0 && GetSpellProto()->Id == 46459) 
+        GetTarget()->DealDamage(GetTarget(), GetTarget()->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
 }
 
 /*********************************************************/

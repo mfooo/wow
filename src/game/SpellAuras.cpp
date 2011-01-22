@@ -9296,6 +9296,7 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                             break;
                         }
                     }
+                break; // should restore spell 44745 and ranks
                 }
                 else
                     return;

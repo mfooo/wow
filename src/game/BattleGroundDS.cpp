@@ -53,6 +53,8 @@ void BattleGroundDS::Update(uint32 diff)
             for(BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
             {
                 Player * plr = sObjectMgr.GetPlayer(itr->first);
+                if(!plr)
+                    continue;
                 if (plr && plr->IsWithinLOS(1214,765,14) && plr->GetDistance2d(1214,765) <= 50)
                     plr->KnockBackPlayerWithAngle(6.40f,55,7);
                 if (plr && plr->IsWithinLOS(1369,817,14) && plr->GetDistance2d(1369,817) <= 50)

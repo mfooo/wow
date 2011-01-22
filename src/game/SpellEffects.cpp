@@ -7134,6 +7134,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     }
                     //Dispel Triggering aura
                     m_caster->RemoveAurasDueToSpell(47331);
+
 					return;
 				}
                 case 47311:                                 // Quest - Jormungar Explosion Spell Spawner
@@ -7151,7 +7152,6 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
                     for(int i = 0; i < 2; ++i)
                         m_caster->CastSpell(m_caster, 47925, true);
-
                     return;
                 }
                 case 47393:                                 // The Focus on the Beach: Quest Completion Script

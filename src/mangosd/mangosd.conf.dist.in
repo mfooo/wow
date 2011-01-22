@@ -62,9 +62,9 @@ ConfVersion=2010100901
 RealmID = 1
 DataDir = "."
 LogsDir = ""
-LoginDatabaseInfo     = "127.0.0.1;3306;mangos;mangos;realmd"
-WorldDatabaseInfo     = "127.0.0.1;3306;mangos;mangos;mangos"
-CharacterDatabaseInfo = "127.0.0.1;3306;mangos;mangos;characters"
+LoginDatabaseInfo     = "127.0.0.1;3306;root;ascent;realmd"
+WorldDatabaseInfo     = "127.0.0.1;3306;root;ascent;mangos"
+CharacterDatabaseInfo = "127.0.0.1;3306;root;ascent;characters"
 LoginDatabaseConnections = 1
 WorldDatabaseConnections = 1
 CharacterDatabaseConnections = 1
@@ -1956,7 +1956,7 @@ PvPAnnouncer.ColorArea = |CFFFE8A0E
 #       Default: 1 - enabled
 #                0 - disabled
 ###################################################################################################################
-Custom.AllowFlyingMountsEverywhere = 1
+Custom.AllowFlyingMountsEverywhere = 0
 
 ###################################################################################################################
 #    Refer-A-Friend system by Mas0n

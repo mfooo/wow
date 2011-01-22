@@ -45,7 +45,6 @@ void SqlDelayThread::run()
     {
         // if the running state gets turned off while sleeping
         // empty the queue before exiting
-
         ACE_Based::Thread::Sleep(loopSleepms);
 
         ProcessRequests();

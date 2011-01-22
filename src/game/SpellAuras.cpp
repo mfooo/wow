@@ -7613,6 +7613,28 @@ void Aura::PeriodicTick()
 
             gain = uint32(gain * spellProto->EffectMultipleValue[GetEffIndex()]);
 
+                // Burn - SWP Brutallus
+                if (spellProto->Id == 46394)
+                {
+                    uint32 ticks = GetAuraTicks();
+                    uint32 threashold[] = {10,21,32,43,54};
+                    for (uint8 i = 0; i<5; i++)
+                        if (ticks > threashold[i])
+                            pdamage *=2;
+                        else
+                            break;
+                }
+
+                // SpellDamageBonus for magic spells
+                if(GetSpellProto()->DmgClass == SPELL_DAMAGE_CLASS_NONE || GetSpellProto()->DmgClass == SPELL_DAMAGE_CLASS_MAGIC)
+					pdamage = pCaster->SpellHealingBonusDone(target, GetSpellProto(), pdamage, DOT, GetStackAmount());
+                // MeleeDamagebonus for weapon based spells
+                else
+                {
+                    WeaponAttackType attackType = GetWeaponAttackType(GetSpellProto());
+					pdamage = pCaster->MeleeDamageBonusDone(target, pdamage, attackType, GetSpellProto(), DOT, GetStackAmount());
+                }
+
             // maybe has to be sent different to client, but not by SMSG_PERIODICAURALOG
             SpellNonMeleeDamage damageInfo(pCaster, target, spellProto->Id, SpellSchoolMask(spellProto->SchoolMask));
             pCaster->CalculateSpellDamage(&damageInfo, gain, spellProto);

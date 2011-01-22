@@ -7026,6 +7026,16 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     }
 
                     return;
+				 }
+                case 45151:                                 // Burn - SWP Brutallus
+                {
+                    if (!unitTarget || unitTarget == m_caster || unitTarget->GetTypeId() != TYPEID_PLAYER)
+                        return;
+                    if (unitTarget->HasAura(46394, EFFECT_INDEX_0))
+                        return;
+
+                    unitTarget->CastSpell(unitTarget, 46394, true);
+                    break;
                 }
                 case 45668:                                 // Ultra-Advanced Proto-Typical Shortening Blaster
                 {

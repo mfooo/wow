@@ -17961,9 +17961,15 @@ void Player::SaveToDB()
 
     std::string sql_name = m_name;
     CharacterDatabase.escape_string(sql_name);
+	
+    std::ostringstream data_armory;
+    for(uint16 i = 0; i < m_valuesCount; i++)
+    {
+	    data_armory << GetUInt32Value(i) << " ";
+    }
 
     std::ostringstream ss;
-    ss << "REPLACE INTO characters (guid,account,name,race,class,gender,level,xp,money,playerBytes,playerBytes2,playerFlags,"
+    ss << "REPLACE INTO characters (guid,account,data,name,race,class,gender,level,xp,money,playerBytes,playerBytes2,playerFlags,"
         "map, dungeon_difficulty, position_x, position_y, position_z, orientation, "
         "taximask, online, cinematic, "
         "totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost, resettalents_time, "
@@ -17973,6 +17979,7 @@ void Player::SaveToDB()
         "power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, grantableLevels) VALUES ("
         << GetGUIDLow() << ", "
         << GetSession()->GetAccountId() << ", '"
+        << data_armory.str().c_str() << "', '"
         << sql_name << "', "
         << (uint32)getRace() << ", "
         << (uint32)getClass() << ", "

@@ -2258,6 +2258,12 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     if (!m_CastItem)
                         return;
 
+                    if (m_caster->GetTypeId() != TYPEID_PLAYER) 
+                        return;
+
+                    if (BattleGround* bg = ((Player*)m_caster)->GetBattleGround())
+                        bg->EventPlayerDroppedFlag((Player*)m_caster);
+
                     if (roll_chance_i(95))                  // Nitro Boosts - success
                         m_caster->CastSpell(m_caster, 54861, true, m_CastItem);
                     else                                    // Knocked Up   - backfire 5%

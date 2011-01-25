@@ -1085,6 +1085,8 @@ void Aura::HandleAddModifier(bool apply, bool Real)
 
     if (apply)
     {
+        uint64 modMask0 = 0;
+        uint64 modMask1 = 0;
         // Add custom charges for some mod aura
         switch (GetSpellProto()->Id)
         {
@@ -1101,6 +1103,17 @@ void Aura::HandleAddModifier(bool apply, bool Real)
             case 64823:                                     // Elune's Wrath (Balance druid t8 set
                 GetHolder()->SetAuraCharges(1);
                 break;
+            // Everlasting Affliction rank 1 - 5
+            case 47201:
+            case 47202:
+            case 47203:
+            case 47204:
+            case 47205:
+            {
+                modMask0 = UI64LIT(0x2);        //Corruption
+                modMask1 = UI64LIT(0x100);      //Unstable Affliction
+                break;
+            }
         }
 
         m_spellmod = new SpellModifier(
@@ -1111,6 +1124,11 @@ void Aura::HandleAddModifier(bool apply, bool Real)
             // prevent expire spell mods with (charges > 0 && m_stackAmount > 1)
             // all this spell expected expire not at use but at spell proc event check
             GetSpellProto()->StackAmount > 1 ? 0 : GetHolder()->GetAuraCharges());
+
+        if( modMask0 | modMask1)
+        {
+            m_spellmod->mask = modMask0 | modMask1<<32;
+        }
     }
 
     ((Player*)GetTarget())->AddSpellMod(m_spellmod, apply);

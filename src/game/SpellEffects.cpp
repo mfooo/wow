@@ -7686,6 +7686,28 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         }
                     return;
                 }
+                case 58941:                                 // Rock Shards 
+                {
+                    if (unitTarget && m_originalCaster && roll_chance_i(33))
+                    {
+                        for (uint32 i = 0; i < 3; ++i)
+                        {
+                            m_originalCaster->CastSpell(unitTarget, 58689, true);
+                            m_originalCaster->CastSpell(unitTarget, 58692, true);
+                        }
+                        if (m_originalCaster->GetMap()->IsRegularDifficulty())
+                        {
+                            m_originalCaster->CastSpell(unitTarget, 58695, true);
+                            m_originalCaster->CastSpell(unitTarget, 58696, true);
+                        }
+                        else
+                        {
+                            m_originalCaster->CastSpell(unitTarget, 60883, true);
+                            m_originalCaster->CastSpell(unitTarget, 60884, true);
+                        }
+                    }
+                    return;
+                }
                 case 59317:                                 // Teleporting
                 {
                     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)

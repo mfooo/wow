@@ -126,9 +126,7 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     PSendSysMessage(LANG_USING_EVENT_AI,sWorld.GetCreatureEventAIVersion());
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
     PSendSysMessage(LANG_UPTIME, str.c_str());
-    SendSysMessage("Welcome to The Infinity Project");
-    SendSysMessage("GIT: http://github.com/FallenAngelX");
-	SendSysMessage("Please feel free to post bugs and Fixes on GiT ");
+    SendSysMessage("Welcome to RaidenWoW");
     SendSysMessage("A heavily modified MaNGOS core & SD2 System");
 
     return true;

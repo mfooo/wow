@@ -267,7 +267,7 @@ bool Map::EnsureGridLoaded(const Cell &cell)
         //otherwise there is a possibility of infinity chain (grid loading will be called many times for the same grid)
         //possible scenario:
         //active object A(loaded with loader.LoadN call and added to the  map)
-        //summons some active object B, while B added to map grid loading called again and so on.. 
+        //summons some active object B, while B added to map grid loading called again and so on..
         setGridObjectDataLoaded(true,cell.GridX(), cell.GridY());
         ObjectGridLoader loader(*grid, this, cell);
         loader.LoadN();
@@ -1390,10 +1390,14 @@ bool InstanceMap::Add(Player *player)
                     // players also become permanently bound when they enter
                     if (groupBind->perm)
                     {
-                        WorldPacket data(SMSG_INSTANCE_SAVE_CREATED, 4);
-                        data << uint32(0);
+                        uint32 m_completed = ((InstanceMap*)this)->GetInstanceData()->GetCompletedEncounters(true);
+                        sLog.outError("InstanceBind::Completed %u",m_completed);
+                        WorldPacket data(SMSG_INSTANCE_LOCK_WARNING_QUERY, 9);
+                        data << uint32(60000);
+                        data << m_completed;
+                        data << uint8(0);
                         player->GetSession()->SendPacket(&data);
-                        player->BindToInstance(GetInstanceSave(), true);
+                        player->SetPendingBind(GetInstanceSave(), 60000);
                     }
                 }
             }

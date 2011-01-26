@@ -429,7 +429,7 @@ Player::Player (WorldSession *session): Unit(), m_mover(this), m_camera(this), m
     m_jail_lasttime = "";
     m_jail_duration = 0;
     // Jail end
-	
+
     // Playerbot mod:
     m_playerbotAI = 0;
     m_playerbotMgr = 0;
@@ -618,11 +618,13 @@ Player::Player (WorldSession *session): Unit(), m_mover(this), m_camera(this), m
     m_GrantableLevelsCount = 0;
 
     m_anticheat = new AntiCheat(this);
-	
+
     /*  Flying Everywhere   */
     m_flytimer = time(NULL);
-	
+
     m_grid_update_timer = 0;
+
+    SetPendingBind(NULL, 0);
 }
 
 Player::~Player ()
@@ -664,18 +666,18 @@ Player::~Player ()
     delete m_declinedname;
     delete m_runes;
     delete m_anticheat;
-	
+
     // Playerbot mod
-    if (m_playerbotAI) 
+    if (m_playerbotAI)
 	{
         delete m_playerbotAI;
         m_playerbotAI = 0;
     }
-    if (m_playerbotMgr) 
+    if (m_playerbotMgr)
 	{
         delete m_playerbotMgr;
         m_playerbotMgr = 0;
-    }	
+    }
 
 }
 
@@ -1267,7 +1269,7 @@ void Player::Update( uint32 update_diff, uint32 p_time )
     SetCanDelayTeleport(true);
     Unit::Update( update_diff, p_time );
     SetCanDelayTeleport(false);
-	
+
     if (m_jail_isjailed)
     {
         time_t localtime;
@@ -1600,6 +1602,17 @@ void Player::Update( uint32 update_diff, uint32 p_time )
             HandleSobering();
     }
 
+    if (HasPendingBind())
+    {
+        if (_pendingBindTimer <= p_time)
+        {
+            BindToInstance();
+            SetPendingBind(NULL, 0);
+        }
+        else
+            _pendingBindTimer -= p_time;
+    }
+
     // not auto-free ghost from body in instances
     if(m_deathTimer > 0  && !GetMap()->Instanceable() && getDeathState() != GHOULED)
     {
@@ -1892,7 +1905,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 
     // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
     Pet* pet = GetPet();
-	
+
     // Playerbot mod: if this user has bots, tell them to stop following master
     // so they don't try to follow the master after the master teleports
     if (GetPlayerbotMgr())
@@ -5500,9 +5513,9 @@ float Player::OCTRegenMPPerSpirit()
 void Player::ApplyRatingMod(CombatRating cr, int32 value, bool apply)
 {
     m_baseRatingValue[cr]+=(apply ? value : -value);
-	
+
     float hastePctMod = 1.0f;
-	
+
 	// After 3.1.3 there was bonus from haste rating increased for specific classes (only for ranged and melee)
 	switch(getClass())
 	{
@@ -5516,7 +5529,7 @@ void Player::ApplyRatingMod(CombatRating cr, int32 value, bool apply)
 		}
 		default:
 		    break;
-	}	
+	}
 
     // explicit affected values
     switch (cr)
@@ -5861,9 +5874,9 @@ void Player::UpdateWeaponSkill (WeaponAttackType attType)
     Unit *pVictim = getVictim();
     if(pVictim && pVictim->IsCharmerOrOwnerPlayerOrPlayerItself())
         return;
-		
+
     if(pVictim && pVictim->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE ))
-        return;		
+        return;
 
     if (IsInFeralForm())
         return;                                             // always maximized SKILL_FERAL_COMBAT in fact
@@ -6719,13 +6732,13 @@ void Player::RewardReputation(Unit *pVictim, float rate)
     uint32 Repfaction1 = Rep->repfaction1;
     uint32 Repfaction2 = Rep->repfaction2;
     uint32 tabardFactionID = 0;
-    
+
     // Championning tabard reputation system
     if(HasAura(Rep->championingAura))
     {
         if( Item* pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_TABARD ) )
-        {                 
-            if ( tabardFactionID = pItem->GetProto()->RequiredReputationFaction ) 
+        {
+            if ( tabardFactionID = pItem->GetProto()->RequiredReputationFaction )
             {
                 Repfaction1 = tabardFactionID;
                 Repfaction2 = tabardFactionID;
@@ -6845,7 +6858,7 @@ void Player::UpdateHonorFields()
     }
 
     m_lastHonorUpdateTime = now;
-	
+
    uint32 HonorKills = GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORBALE_KILLS);
    uint32 victim_rank = 0;
 
@@ -6892,7 +6905,7 @@ void Player::UpdateHonorFields()
         SetTitle(titleEntry);
     else
         return;
- 
+
     SetUInt32Value(PLAYER_CHOSEN_TITLE,victim_rank);
 
     uint32 startid = 1;
@@ -6913,7 +6926,7 @@ void Player::UpdateHonorFields()
                 SetTitle(titleEntry,true);
             }
         }
-    } 
+    }
 }
 
 ///Calculate the amount of honor gained based on the victim
@@ -12292,7 +12305,7 @@ void Player::DestroyItemCount( Item* pItem, uint32 &count, bool update )
 {
     if(!pItem)
         return;
-		
+
     /*  Flying Everywhere   */
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE))
     {
@@ -13801,7 +13814,7 @@ void Player::OnGossipSelect(WorldObject* pSource, uint32 gossipListId, uint32 me
     {
         case GOSSIP_OPTION_GOSSIP:
         {
-            GossipMenuItemData pMenuData = gossipmenu.GetItemData(gossipListId);            
+            GossipMenuItemData pMenuData = gossipmenu.GetItemData(gossipListId);
 
             if (pMenuData.m_gAction_poi)
                 PlayerTalkClass->SendPointOfInterest(pMenuData.m_gAction_poi);
@@ -16643,7 +16656,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder *holder )
     }
 
     _LoadDeclinedNames(holder->GetResult(PLAYER_LOGIN_QUERY_LOADDECLINEDNAMES));
-	
+
    // Loads the jail datas and if jailed it corrects the position to the corresponding jail
     _LoadJail();
 
@@ -17087,7 +17100,7 @@ void Player::_LoadInventory(QueryResult *result, uint32 timediff)
             if (success)
             {
                 item->SetState(ITEM_UNCHANGED, this);
-				
+
                 // restore container unchanged state also
                 if (item->GetContainer())
                     item->GetContainer()->SetState(ITEM_UNCHANGED, this);
@@ -17746,6 +17759,14 @@ InstanceSave* Player::GetBoundInstanceSaveForSelfOrGroup(uint32 mapid)
     return pSave;
 }
 
+void Player::BindToInstance()
+{
+    WorldPacket data(SMSG_INSTANCE_SAVE_CREATED, 4);
+    data << uint32(0);
+    GetSession()->SendPacket(&data);
+    BindToInstance(_pendingBind, true);
+}
+
 void Player::SendRaidInfo()
 {
     uint32 counter = 0;
@@ -17962,8 +17983,14 @@ void Player::SaveToDB()
     std::string sql_name = m_name;
     CharacterDatabase.escape_string(sql_name);
 
+    std::ostringstream data_armory;
+    for(uint16 i = 0; i < m_valuesCount; i++)
+    {
+	    data_armory << GetUInt32Value(i) << " ";
+    }
+
     std::ostringstream ss;
-    ss << "REPLACE INTO characters (guid,account,name,race,class,gender,level,xp,money,playerBytes,playerBytes2,playerFlags,"
+    ss << "REPLACE INTO characters (guid,account,data,name,race,class,gender,level,xp,money,playerBytes,playerBytes2,playerFlags,"
         "map, dungeon_difficulty, position_x, position_y, position_z, orientation, "
         "taximask, online, cinematic, "
         "totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost, resettalents_time, "
@@ -17973,6 +18000,7 @@ void Player::SaveToDB()
         "power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, grantableLevels) VALUES ("
         << GetGUIDLow() << ", "
         << GetSession()->GetAccountId() << ", '"
+        << data_armory.str().c_str() << "', '"
         << sql_name << "', "
         << (uint32)getRace() << ", "
         << (uint32)getClass() << ", "
@@ -18095,7 +18123,7 @@ void Player::SaveToDB()
     ss << ", ";
     ss << uint32(m_GrantableLevelsCount);
     ss << ")";
-	
+
     CharacterDatabase.BeginTransaction();
 
     CharacterDatabase.Execute( ss.str().c_str() );
@@ -18554,7 +18582,7 @@ void Player::_SaveStats()
     // check if stat saving is enabled and if char level is high enough
     if(!sWorld.getConfig(CONFIG_UINT32_MIN_LEVEL_STAT_SAVE) || getLevel() < sWorld.getConfig(CONFIG_UINT32_MIN_LEVEL_STAT_SAVE))
         return;
-		
+
 	std::ostringstream cs;
     cs<<"UPDATE characters SET data='";
 
@@ -18565,7 +18593,7 @@ void Player::_SaveStats()
     cs<<"' WHERE guid='"<< GetGUIDLow() <<"'";
 
     CharacterDatabase.Execute(cs.str().c_str());
-	
+
 	std::ostringstream equipmentCache;
     //equipmentCache<<"UPDATE character_stats SET equipmentCache='";
 
@@ -18576,15 +18604,15 @@ void Player::_SaveStats()
     //equipmentCache<<"' WHERE guid='"<< GUID_LOPART(GetGUIDLow()) <<"'";
 
     //CharacterDatabase.Execute(equipmentCache.str().c_str());
-   
+
     std::string sql_name = m_name;
     CharacterDatabase.escape_string(sql_name);
-		
+
     std::ostringstream data_armory;
     for(uint16 i = 0; i < m_valuesCount; i++)
     {
 	    data_armory << GetUInt32Value(i) << " ";
-    }	
+    }
 
     CharacterDatabase.PExecute("DELETE FROM character_stats WHERE guid = '%u'", GetGUIDLow());
     std::ostringstream ss;
@@ -22377,7 +22405,7 @@ bool Player::CanStartFlyInArea(uint32 mapid, uint32 zone, uint32 area) const
 {
     if (isGameMaster())
         return true;
-		
+
     /*  Flying Everywhere   */
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE))
         return true;
@@ -22959,7 +22987,7 @@ void Player::UnsummonPetTemporaryIfAny()
         {
             if (!_pet->isTemporarySummoned())
                 _pet->Unsummon(PET_SAVE_AS_CURRENT, this);
-            else 
+            else
                 _pet->Unsummon(PET_SAVE_NOT_IN_SLOT, this);
         }
     }
@@ -23758,7 +23786,7 @@ void Player::FlyingMountsSpellsToItems()
 
             if(! (isFlyingSpell(sEntry) || isFlyingFormSpell(sEntry)) )
                 continue;
- 
+
             if(HasSpell(pProto->Spells[i].SpellId))
             {
                 uint16 RindingSkill = GetSkillValue(SKILL_RIDING);
@@ -23766,8 +23794,8 @@ void Player::FlyingMountsSpellsToItems()
                 SetSkill(SKILL_RIDING, RindingSkill, 300);
                 break;
             }
- 
-        }        
+
+        }
     }
 
     for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
@@ -23779,7 +23807,7 @@ void Player::FlyingMountsSpellsToItems()
                 Item* pItem = GetItemByPos( i, j );
                 if(!pItem)
                     continue;
- 
+
                 ItemPrototype const *pProto = sObjectMgr.GetItemPrototype(pItem->GetEntry());
                 if(!pProto)
                     continue;
@@ -23792,7 +23820,7 @@ void Player::FlyingMountsSpellsToItems()
 
                     if(! (isFlyingSpell(sEntry) || isFlyingFormSpell(sEntry)) )
                         continue;
- 
+
                     if(HasSpell(pProto->Spells[i].SpellId))
                     {
                         uint16 RindingSkill = GetSkillValue(SKILL_RIDING);
@@ -23818,7 +23846,7 @@ bool Player::CanUseFlyingMounts(SpellEntry const* sEntry)
         WorldPacket data(SMSG_CAST_FAILED, (4+1+1));
         data << uint8(0);
         data << uint32(sEntry->Id);
-        data << uint8(SPELL_FAILED_TARGET_IN_COMBAT); 
+        data << uint8(SPELL_FAILED_TARGET_IN_COMBAT);
         GetSession()->SendPacket(&data);
         return false;
     }
@@ -23828,7 +23856,7 @@ bool Player::CanUseFlyingMounts(SpellEntry const* sEntry)
         WorldPacket data(SMSG_CAST_FAILED, (4+1+1));
         data << uint8(0);
         data << uint32(sEntry->Id);
-        data << uint8(SPELL_FAILED_NOT_HERE); 
+        data << uint8(SPELL_FAILED_NOT_HERE);
         GetSession()->SendPacket(&data);
         return false;
     }
@@ -23889,16 +23917,16 @@ ReferAFriendError Player::GetReferFriendError(Player * target, bool summon)
     return ERR_REFER_A_FRIEND_NONE;
 }
 
-void Player::ChangeGrantableLevels(uint8 increase) 
+void Player::ChangeGrantableLevels(uint8 increase)
 {
     if (increase)
         m_GrantableLevelsCount += increase;
     else
     {
-        m_GrantableLevelsCount -= 1; 
+        m_GrantableLevelsCount -= 1;
 
-        if (m_GrantableLevelsCount < 0) 
-            m_GrantableLevelsCount = 0; 
+        if (m_GrantableLevelsCount < 0)
+            m_GrantableLevelsCount = 0;
     }
 
     // set/unset flag - granted levels

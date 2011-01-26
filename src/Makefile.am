@@ -21,5 +21,3 @@ SUBDIRS = tools framework shared realmd game bindings mangosd
 
 ## Additional files to include when running 'make dist'
 #  Nothing yet.
-
-

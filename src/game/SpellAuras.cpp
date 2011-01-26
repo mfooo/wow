@@ -366,7 +366,7 @@ pAuraHandler AuraHandler[TOTAL_AURAS]=
     &Aura::HandleNULL,                                      //313 0 spells in 3.3
     &Aura::HandleNULL,                                      //314 1 test spell (reduce duration of silince/magic)
     &Aura::HandleNULL,                                      //315 underwater walking
-    &Aura::HandleNoImmediateEffect                          //316 SPELL_AURA_MOD_PERIODIC_HASTE makes haste affect HOT/DOT ticks
+    &Aura::HandleNoImmediateEffect,                          //316 SPELL_AURA_MOD_PERIODIC_HASTE makes haste affect HOT/DOT ticks
 };
 
 static AuraType const frozenAuraTypes[] = { SPELL_AURA_MOD_ROOT, SPELL_AURA_MOD_STUN, SPELL_AURA_NONE };
@@ -1085,6 +1085,8 @@ void Aura::HandleAddModifier(bool apply, bool Real)
 
     if (apply)
     {
+        uint64 modMask0 = 0;
+        uint64 modMask1 = 0;
         // Add custom charges for some mod aura
         switch (GetSpellProto()->Id)
         {
@@ -1101,6 +1103,17 @@ void Aura::HandleAddModifier(bool apply, bool Real)
             case 64823:                                     // Elune's Wrath (Balance druid t8 set
                 GetHolder()->SetAuraCharges(1);
                 break;
+            // Everlasting Affliction rank 1 - 5
+            case 47201:
+            case 47202:
+            case 47203:
+            case 47204:
+            case 47205:
+            {
+                modMask0 = UI64LIT(0x2);        //Corruption
+                modMask1 = UI64LIT(0x100);      //Unstable Affliction
+                break;
+            }
         }
 
         m_spellmod = new SpellModifier(
@@ -1111,6 +1124,11 @@ void Aura::HandleAddModifier(bool apply, bool Real)
             // prevent expire spell mods with (charges > 0 && m_stackAmount > 1)
             // all this spell expected expire not at use but at spell proc event check
             GetSpellProto()->StackAmount > 1 ? 0 : GetHolder()->GetAuraCharges());
+
+        if( modMask0 | modMask1)
+        {
+            m_spellmod->mask = modMask0 | modMask1<<32;
+        }
     }
 
     ((Player*)GetTarget())->AddSpellMod(m_spellmod, apply);
@@ -3117,7 +3135,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
                         else if (hairColour == 7) modelid = 29417;
                         else if (hairColour == 4) modelid = 29416;
                     }
-                } 
+                }
                 else if (Player::TeamForRace(target->getRace()) == HORDE)
                 {
                     uint8 skinColour = target->GetByteValue(PLAYER_BYTES, 0);
@@ -4378,7 +4396,7 @@ void Aura::HandleModStealth(bool apply, bool Real)
         // only at real aura add
         if (Real)
         {
-        
+
             //Player stealths has no logner ranks...could be correct
             if(GetSpellProto()->EffectRealPointsPerLevel[GetEffIndex()])
                 m_modifier.m_amount = target->getLevel()*GetSpellProto()->EffectRealPointsPerLevel[GetEffIndex()];
@@ -4739,11 +4757,11 @@ void Aura::HandleAuraModIncreaseSpeed(bool apply, bool Real)
     // all applied/removed only at real aura add/remove
     if(!Real)
         return;
-        
+
     Unit *target = GetTarget();
 
     GetTarget()->UpdateSpeed(MOVE_RUN, true);
-    
+
     if (apply && GetSpellProto()->Id == 58875)
         target->CastSpell(target, 58876, true);
 }
@@ -5081,8 +5099,8 @@ void Aura::HandleAuraModStalked(bool apply, bool /*Real*/)
     else
         GetTarget()->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TRACK_UNIT);
 
-	// assassins mark fix 
-    if(m_removeMode == AURA_REMOVE_BY_DEFAULT && m_duration <= 0 && GetSpellProto()->Id == 46459) 
+	// assassins mark fix
+    if(m_removeMode == AURA_REMOVE_BY_DEFAULT && m_duration <= 0 && GetSpellProto()->Id == 46459)
         GetTarget()->DealDamage(GetTarget(), GetTarget()->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
 }
 
@@ -5130,6 +5148,10 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                         pCaster->CastSpell(target, GetSpellProto()->EffectTriggerSpell[GetEffIndex()], true, NULL, this);
                 }
 
+                return;
+            case 71441:
+                if (m_removeMode == AURA_REMOVE_BY_EXPIRE)
+                    target->CastSpell(target, 67375, true, NULL, this);
                 return;
             default:
                 break;
@@ -5239,7 +5261,7 @@ void Aura::HandleAuraPeriodicDummy(bool apply, bool Real)
             {
                 case 48018:
                     if (apply)
-                        target->CastSpell(target, 62388, true);                
+                        target->CastSpell(target, 62388, true);
                     else
                     {
                         target->RemoveGameObject(spell->Id,true);
@@ -5443,7 +5465,7 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
         // Parasitic Shadowfiend - handle summoning of two Shadowfiends on DoT expire
         if(spellProto->Id == 41917)
             target->CastSpell(target, 41915, true);
-			
+
 		// Deathbloom (Naxxramas - Loatheb normal)
         if (spellProto->Id == 29865)
             target->CastSpell(target, 55594, true);
@@ -5451,7 +5473,7 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
         // Deathbloom (Naxxramas - Loatheb heroic)
         if (spellProto->Id == 55053)
             target->CastSpell(target, 55601, true);
-			
+
         else if (spellProto->Id == 74562) // SPELL_FIERY_COMBUSTION - Ruby sanctum boss Halion
             target->CastSpell(target, 74607, true, NULL, NULL, GetCasterGUID());
         else if (spellProto->Id == 74792) // SPELL_SOUL_CONSUMPTION - Ruby sanctum boss Halion
@@ -7000,7 +7022,7 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                 }
             }
         }
-        else if (caster && caster->GetTypeId() == TYPEID_PLAYER && spellProto->Id == 47788 && 
+        else if (caster && caster->GetTypeId() == TYPEID_PLAYER && spellProto->Id == 47788 &&
             m_removeMode == AURA_REMOVE_BY_EXPIRE)
         {
             Player* plr = (Player*)caster;
@@ -7192,6 +7214,9 @@ void Aura::PeriodicTick()
             // FIXME: need use SpellDamageBonus instead?
             if (pCaster->GetTypeId() == TYPEID_PLAYER)
                 pdamage -= target->GetSpellDamageReduction(pdamage);
+
+            if (GetSpellProto()->Id == 50344) // Dream Funnel
+                pdamage = uint32(pCaster->GetMaxHealth()*0.05f);
 
             target->CalculateDamageAbsorbAndResist(pCaster, GetSpellSchoolMask(spellProto), DOT, pdamage, &absorb, &resist, !(GetSpellProto()->AttributesEx2 & SPELL_ATTR_EX2_CANT_REFLECTED));
             cleanDamage.absorb += absorb;
@@ -7992,33 +8017,33 @@ void Aura::PeriodicDummyTick()
                         target->RemoveAurasDueToSpell(spell->Id);
                     return;
                 }
-                case 54798: // FLAMING Arrow Triggered Effect 
-                { 
-                    Unit * caster = GetCaster(); 
-                    if (!caster) 
-                        return; 
- 
-                    if (target->GetTypeId() == TYPEID_UNIT || !caster->GetObjectGuid().IsVehicle()) 
-                        return; 
- 
-                    Unit *rider = caster->GetVehicleKit()->GetPassenger(0); 
-                    if (!rider) 
-                        return; 
- 
-                    // set ablaze 
-                    if (target->HasAura(54683, EFFECT_INDEX_0)) 
-                        return; 
-                    else 
-                        target->CastSpell(target, 54683, true); 
- 
-                    // Credit Frostworgs 
-                    if (target->GetEntry() == 29358) 
-                        rider->CastSpell(rider, 54896, true); 
-                    // Credit Frost Giants 
-                    else if (target->GetEntry() == 29351) 
-                        rider->CastSpell(rider, 54893, true);  
-                    break; 
-               } 
+                case 54798: // FLAMING Arrow Triggered Effect
+                {
+                    Unit * caster = GetCaster();
+                    if (!caster)
+                        return;
+
+                    if (target->GetTypeId() == TYPEID_UNIT || !caster->GetObjectGuid().IsVehicle())
+                        return;
+
+                    Unit *rider = caster->GetVehicleKit()->GetPassenger(0);
+                    if (!rider)
+                        return;
+
+                    // set ablaze
+                    if (target->HasAura(54683, EFFECT_INDEX_0))
+                        return;
+                    else
+                        target->CastSpell(target, 54683, true);
+
+                    // Credit Frostworgs
+                    if (target->GetEntry() == 29358)
+                        rider->CastSpell(rider, 54896, true);
+                    // Credit Frost Giants
+                    else if (target->GetEntry() == 29351)
+                        rider->CastSpell(rider, 54893, true);
+                    break;
+               }
 // Exist more after, need add later
                 default:
                     break;
@@ -9752,7 +9777,7 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                         m_player->SetDeathState(GHOULED);
                         m_player->SetHealth(1);
                         m_player->SetMovement(MOVE_ROOT);
-						
+
 /*                        WorldPacket data(SMSG_PRE_RESURRECT, m_player->GetPackGUID().size());
                         data << m_player->GetPackGUID();
                         m_player->GetSession()->SendPacket(&data);

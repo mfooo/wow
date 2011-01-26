@@ -7428,6 +7428,9 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     break;
                 }
                 case 52479:                                 // The Gift That Keeps On Giving - trigger Scarlet Miner Ghoul Transform
+                //case 52490:
+                case 52481:
+                //case 52482:
                 {
                     if (m_caster->GetTypeId() != TYPEID_PLAYER || unitTarget->GetTypeId() == TYPEID_PLAYER)
                         return;

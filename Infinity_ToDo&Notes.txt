@@ -26,8 +26,13 @@ BUGS_&_ECT ++++++++++++++
 
 2. fix bug with quest ambush at overlook   quest works fine   and credit is fine
 
-3. DK blood presence is adding improve blood presence to players auras w/o them having the talent and ect  or at least looking tat way
+3. DK blood presence is adding improve blood presence to players auras w/o them having the talent and ect  or at least looking that way
 
+4. eye of acherus is still not unapplying aura 51923  and players are gettign a speed boost til they log out or server gets rebooted 
+
+5. need to add melee attack to EventAI for the citizens or make them cower or something instead of getting hit say text and standign there 8)  and other non scarlet type around dk starting area need to move some crusaders off the same eventai the citizens are on make the crusaders there own EventAI using data from wowhead they should also be calling out for help and /or assistance
+
+6.
 ==========================
 In_Progress_Testing ++++++
 ==========================

@@ -26,7 +26,7 @@ BUGS_&_ECT ++++++++++++++
 
 2. fix bug with quest ambush at overlook   quest works fine   and credit is fine
 
-3. 
+3. DK blood presence is adding improve blood presence to players auras w/o them having the talent and ect  or at least looking tat way
 
 ==========================
 In_Progress_Testing ++++++

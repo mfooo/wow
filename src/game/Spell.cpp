@@ -1823,7 +1823,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 if(!prev->IsWithinDist(*next, CHAIN_SPELL_JUMP_RADIUS))
                     break;
 
-                if(!prev->IsWithinLOSInMap(*next))
+                if(!prev->IsWithinLOSInMap(*next) || ((m_spellInfo->AttributesEx6 & SPELL_ATTR_EX6_IGNORE_CCED_TARGETS) && !(*next)->CanFreeMove()))
                 {
                     ++next;
                     continue;
@@ -1959,7 +1959,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 {
                     if (!prev->IsWithinDist (*next,CHAIN_SPELL_JUMP_RADIUS))
                         break;
-                    if (!prev->IsWithinLOSInMap (*next))
+                    if (!prev->IsWithinLOSInMap (*next) || ((m_spellInfo->AttributesEx6 & SPELL_ATTR_EX6_IGNORE_CCED_TARGETS) && !(*next)->CanFreeMove()))
                     {
                         ++next;
                         continue;

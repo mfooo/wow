@@ -448,7 +448,7 @@ const uint32 ItemQualityColors[MAX_ITEM_QUALITY] = {
 #define SPELL_ATTR_EX6_UNK5                       0x00000020            // 5
 #define SPELL_ATTR_EX6_UNK6                       0x00000040            // 6
 #define SPELL_ATTR_EX6_UNK7                       0x00000080            // 7
-#define SPELL_ATTR_EX6_UNK8                       0x00000100            // 8
+#define SPELL_ATTR_EX6_IGNORE_CCED_TARGETS        0x00000100            // 8
 #define SPELL_ATTR_EX6_UNK9                       0x00000200            // 9
 #define SPELL_ATTR_EX6_UNK10                      0x00000400            // 10
 #define SPELL_ATTR_EX6_NOT_IN_RAID_INSTANCE       0x00000800            // 11 not usable in raid instance
@@ -1969,7 +1969,7 @@ enum CreatureTypeFlags
     CREATURE_TYPEFLAGS_UNK15            = 0x00004000,       // Lua_UnitGUID, client does guid_low &= 0xFF000000 if this flag is set
     CREATURE_TYPEFLAGS_ENGINEERLOOT     = 0x00008000,       // Can be looted by engineer
     CREATURE_TYPEFLAGS_EXOTIC           = 0x00010000,       // Can be tamed by hunter as exotic pet
-    CREATURE_TYPEFLAGS_UNK18            = 0x00020000,       // related to CreatureDisplayInfo and scaling in some way 
+    CREATURE_TYPEFLAGS_UNK18            = 0x00020000,       // related to CreatureDisplayInfo and scaling in some way
     CREATURE_TYPEFLAGS_UNK19            = 0x00040000,       // ? Related to vehicle/siege weapons?
     CREATURE_TYPEFLAGS_UNK20            = 0x00080000,       // may be has something to do with missiles
     CREATURE_TYPEFLAGS_UNK21            = 0x00100000,       // no idea, but it used by client, may be related to rendering

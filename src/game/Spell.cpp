@@ -6888,7 +6888,8 @@ void Spell::DelayedChannel()
         return;
 
     // check pushback reduce
-    int32 delaytime = GetSpellDuration(m_spellInfo) * 25 / 100;// channeling delay is normally 25% of its time per hit
+    int32 duration = ApplyHasteToChannelSpell(GetSpellDuration(m_spellInfo), m_spellInfo, this); 
+    int32 delaytime = duration * 25 / 100;// channeling delay is normally 25% of its time per hit
     int32 delayReduce = 100;                                // must be initialized to 100 for percent modifiers
     ((Player*)m_caster)->ApplySpellMod(m_spellInfo->Id, SPELLMOD_NOT_LOSE_CASTING_TIME, delayReduce, this);
     delayReduce += m_caster->GetTotalAuraModifier(SPELL_AURA_REDUCE_PUSHBACK) - 100;

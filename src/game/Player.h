@@ -1353,33 +1353,33 @@ class MANGOS_DLL_SPEC Player : public Unit
             return spellInfo->EffectApplyAuraName[0]==SPELL_AURA_MOUNTED &&
             IsSpellHaveAura(spellInfo, SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED);
             //IsSpellHaveAura(spellInfo, SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED);
-            //spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED && 
+            //spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED &&
             //spellInfo->EffectApplyAuraName[2]==SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED;
         }
 
         bool isRunningSpell(SpellEntry const* spellInfo) const
         {
             return spellInfo->EffectApplyAuraName[0]==SPELL_AURA_MOUNTED &&
-            spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED; 
+            spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED;
         }
 
         bool isFlyingFormSpell(SpellEntry const* spellInfo) const
-        { 
+        {
             return spellInfo->EffectApplyAuraName[0]==SPELL_AURA_MOD_SHAPESHIFT &&
             spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MECHANIC_IMMUNITY &&
             spellInfo->EffectApplyAuraName[2]==SPELL_AURA_FLY;
         }
 
         bool isRunningFormSpell(SpellEntry const* spellInfo) const
-        { 
+        {
             return spellInfo->EffectApplyAuraName[0]==SPELL_AURA_MOD_SHAPESHIFT &&
             spellInfo->EffectApplyAuraName[1]==SPELL_AURA_MECHANIC_IMMUNITY &&
             spellInfo->EffectApplyAuraName[2]!=SPELL_AURA_FLY;
         }
 
         void RemoveFlyingSpells()
-        {  
-            Unmount(); 
+        {
+            Unmount();
             RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
             RemoveSpellsCausingAura(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED); //BM added
             //RemoveSpellsCausingAura(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED); //BM removed
@@ -1387,14 +1387,14 @@ class MANGOS_DLL_SPEC Player : public Unit
         }
 
         void RemoveFlyingFormSpells()
-        { 
+        {
             RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
             RemoveSpellsCausingAura(SPELL_AURA_MECHANIC_IMMUNITY);
             RemoveSpellsCausingAura(SPELL_AURA_FLY);
         }
 
         void RemoveRunningFormSpells()
-        { 
+        {
             RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
             RemoveSpellsCausingAura(SPELL_AURA_MECHANIC_IMMUNITY);
         }
@@ -2034,7 +2034,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void UpdateArmorPenetration();
         void ApplyManaRegenBonus(int32 amount, bool apply);
         void UpdateManaRegen();
-		
+
 		void ApplyHealthRegenBonus(int32 amount, bool apply);
 
         const uint64& GetLootGUID() const { return m_lootGuid.GetRawValue(); }
@@ -2206,7 +2206,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         ///PVP Token
         void ReceiveToken();
-		
+
         void _ApplyItemMods(Item *item,uint8 slot,bool apply);
         void _RemoveAllItemMods();
         void _ApplyAllItemMods();
@@ -2374,7 +2374,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void UpdateSpeakTime();
         bool CanSpeak() const;
         void ChangeSpeakTime(int utime);
-		
+
         // Jail by WarHead
         // --------------
         // Char datas...
@@ -2604,7 +2604,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetPlayerbotMgr(PlayerbotMgr* mgr) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotMgr=mgr; }
         PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr; }
         void SetBotDeathTimer() { m_deathTimer = 0; }
-		
+
         uint32 m_grid_update_timer;
 
     protected:

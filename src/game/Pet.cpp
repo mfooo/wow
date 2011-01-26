@@ -526,7 +526,7 @@ void Pet::Update(uint32 update_diff, uint32 diff)
                     return;
                 }
             }
-            else 
+            else
                 if (!IsWithinDistInMap(owner, GetMap()->GetVisibilityDistance()))
                 {
                     sLog.outError("Not controlled pet %d lost view from owner, removed. Owner = %d, distance = %d, pet GUID = ", GetGUID(),owner->GetGUID(), GetDistance2d(owner), owner->GetPetGuid().GetCounter());
@@ -2124,7 +2124,7 @@ void Pet::ApplyStatScalingBonus(Stats stat, bool apply)
     m_baseBonusData->statScale[stat] = newStat;
 
     int32 basePoints = int32(m_baseBonusData->statScale[stat] * (CalculateScalingData()->statScale[stat] / 100.0f));
-    
+
     if(stat == STAT_STAMINA)
     {
         PetSpellMap::const_iterator itr = m_spells.find(62758);    //Wild Hunt rank 1
@@ -2301,7 +2301,7 @@ void Pet::ApplyAttackPowerScalingBonus(bool apply)
         case HUNTER_PET:
         {
             newAPBonus = owner->GetTotalAttackPowerValue(RANGED_ATTACK);
-            
+
             PetSpellMap::const_iterator itr = m_spells.find(62758);    //Wild Hunt rank 1
             if (itr == m_spells.end())
                 itr = m_spells.find(62762);                            //Wild Hunt rank 2
@@ -2833,7 +2833,7 @@ bool Pet::Summon()
             SetUInt32Value(UNIT_FIELD_FLAGS, 0);
             SetUInt32Value(UNIT_FIELD_BYTES_1, 0);
             SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
-//            SetName("");           
+//            SetName("");
             SetNeedSave(false);
             owner->AddGuardian(this);
             break;

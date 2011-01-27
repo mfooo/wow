@@ -2190,6 +2190,13 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                         if (Unit* caster = GetCaster())
                         caster->CastSpell(caster, 50001, true, NULL, this);
                         return;
+                    case 61187: 
+                    case 61190:
+                    {
+                        target->RemoveAurasDueToSpell(57620);
+                        target->RemoveAurasDueToSpell(57874);
+                        return;
+                    }
                     case 62061:                             // Festive Holiday Mount
                         if (target->HasAuraType(SPELL_AURA_MOUNTED))
                             // Reindeer Transformation

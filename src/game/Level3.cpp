@@ -1282,7 +1282,7 @@ bool ChatHandler::HandleAchievementCriteriaAddCommand(char* args)
         return false;
 
     uint32 new_val;
-
+    
     if (maxValue)
         new_val = progress < maxValue && maxValue - progress > val ? progress + val : maxValue;
     else
@@ -4149,11 +4149,6 @@ bool ChatHandler::HandleNpcInfoCommand(char* /*args*/)
     }
 
     ShowNpcOrGoSpawnInformation<Creature>(target->GetDBTableGUIDLow());
-    // added by Lorenor
-    SendSysMessage("Creature phasemask:");
-    char *phaseStr;
-    itoa(target->GetPhaseMask(), phaseStr, 10);
-    SendSysMessage(phaseStr);
     return true;
 }
 
@@ -4655,7 +4650,7 @@ bool ChatHandler::HandleListAurasCommand (char* /*args*/)
     for (Unit::SpellAuraHolderMap::const_iterator itr = uAuras.begin(); itr != uAuras.end(); ++itr)
     {
         bool talent = GetTalentSpellCost(itr->second->GetId()) > 0;
-
+        
         SpellAuraHolder *holder = itr->second;
         char const* name = holder->GetSpellProto()->SpellName[GetSessionDbcLocale()];
 
@@ -4664,7 +4659,7 @@ bool ChatHandler::HandleListAurasCommand (char* /*args*/)
             Aura *aur = holder->GetAuraByEffectIndex(SpellEffectIndex(i));
             if (!aur)
                 continue;
-
+            
             if (m_session)
             {
                 std::ostringstream ss_name;

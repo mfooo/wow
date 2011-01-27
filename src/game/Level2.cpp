@@ -881,12 +881,6 @@ bool ChatHandler::HandleGameObjectTargetCommand(char* args)
 
         ShowNpcOrGoSpawnInformation<GameObject>(target->GetDBTableGUIDLow());
 
-		// added by Lorenor, crashes
-        /*SendSysMessage("Gameobject phasemask:");
-        char *phaseStr;
-        itoa(target->GetPhaseMask(), phaseStr, 10);
-        SendSysMessage(phaseStr);*/
-
     }
     return true;
 }
@@ -2547,11 +2541,6 @@ bool ChatHandler::HandlePInfoCommand(char* args)
     uint32 copp = (money % GOLD) % SILVER;
     PSendSysMessage(LANG_PINFO_LEVEL,  timeStr.c_str(), level, gold,silv,copp);
 
-	// added by Lorenor
-    SendSysMessage("Player phasemask:");
-    char *phaseStr;
-    itoa(target->GetPhaseMask(), phaseStr, 10);
-    SendSysMessage(phaseStr);
     return true;
 }
 
@@ -2637,7 +2626,7 @@ bool ChatHandler::HandleTicketCommand(char* args)
             if (num == 0)
                 return false;
 
-            // mgr numbering tickets start from 0
+            // mgr numbering tickets start from 0 
             ticket = sTicketMgr.GetGMTicketByOrderPos(num-1);
 
             if (!ticket)
@@ -2684,7 +2673,7 @@ bool ChatHandler::HandleTicketCommand(char* args)
         if (num == 0)
             return false;
 
-        // mgr numbering tickets start from 0
+        // mgr numbering tickets start from 0 
         GMTicket* ticket = sTicketMgr.GetGMTicketByOrderPos(num-1);
         if (!ticket)
         {
@@ -2739,7 +2728,7 @@ bool ChatHandler::HandleDelTicketCommand(char *args)
         if (num ==0)
             return false;
 
-        // mgr numbering tickets start from 0
+        // mgr numbering tickets start from 0 
         GMTicket* ticket = sTicketMgr.GetGMTicketByOrderPos(num-1);
 
         if (!ticket)

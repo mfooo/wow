@@ -617,13 +617,9 @@ bool ChatHandler::HandleGonameCommand(char* args)
 bool ChatHandler::HandlePhaseCommand(char* args)
 {
 	Player* target;
-	Player* player;
     ObjectGuid target_guid;
     std::string target_name;
     
-	if (!ExtractPlayerTarget(&args, &target, &target_guid, &target_name))
-        return false; 
-
 	int32 phase = 1;
     char* nameStr = NULL;
 
@@ -650,24 +646,27 @@ bool ChatHandler::HandlePhaseCommand(char* args)
         return false;
     }
 
-    if (!player)
+	if (!ExtractPlayerTarget(&args, &target, &target_guid, &target_name))
+        return false; 
+
+    if (!target)
     {
-        SendSysMessage("Can phase only online players.");
+        SendSysMessage("Can only phase online players.");
         SetSentErrorMessage(true);
         return false;
     }
 
-    if (!player->isType(TYPEMASK_PLAYER))
+    if (!target->isType(TYPEMASK_PLAYER))
     {
         SendSysMessage("Target is not a player.");
         SetSentErrorMessage(true);
         return false;
     }
 
-    if (HasLowerSecurity(player))
+    if (HasLowerSecurity(target))
         return false;
 
-    player->SetPhaseMask(phase,true);
+    target->SetPhaseMask(phase,true);
     SendSysMessage("New phase set.");
     return true;
 }

@@ -9224,7 +9224,7 @@ bool Unit::CanHaveThreatList() const
         return false;
 		
     // Vehicles can't have threat list 
-    if (creature->GetVehicleKit())
+    if (creature->GetVehicleKit() && (creature->GetMapId() == 607 || creature->GetMapId() == 628))
         return false;
 
     // charmed units can not have a threat list if charmed by player

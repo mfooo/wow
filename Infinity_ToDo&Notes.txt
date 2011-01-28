@@ -30,9 +30,7 @@ BUGS_&_ECT ++++++++++++++
 
 4. eye of acherus is still not unapplying aura 51923  and players are gettign a speed boost til they log out or server gets rebooted 
 
-5. need to add melee attack to EventAI for the citizens or make them cower or something instead of getting hit say text and standign there 8)  and other non scarlet type around dk starting area need to move some crusaders off the same eventai the citizens are on make the crusaders there own EventAI using data from wowhead they should also be calling out for help and /or assistance
-
-6.
+5. player need to have doiminion over acherus at all time in ebon hold if player is dk and earned it 
 ==========================
 In_Progress_Testing ++++++
 ==========================
@@ -49,8 +47,8 @@ nexus/nexus_______12_17_2010===================  instance and events are working
 ==============================
 Quests_Testing_&_Stuff +++++++
 ==============================
-Eye of acherus___ 1_20_2011  =============  Quest and eye is working
-Blood_elf Starting Area Quest (up to where you leave for ghostlands)_____12_17_2010 ===  i have 5 quest left to test  but so for only had to fix 2 quest
+Eye of acherus___ 1_28_2011  =============  Quest and eye is working
+Blood_elf Starting Area Quest (up to where you leave for ghostlands)1_28_2010
 
 ========================
 Quests_BUGS_&_ERRORS +++

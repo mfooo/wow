@@ -3619,8 +3619,9 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
                     //break;
                 //case 71309:                               // [DND] Spawn Portal
                     //break;
-                //case 71450:                               // Crown Parcel Service Uniform
-                    //break;
+                case 71450:                                 // Crown Parcel Service Uniform
+                    target->SetDisplayId(target->getGender() == GENDER_MALE ? 31002 : 31003);
+                    break;
                 //case 75531:                               // Gnomeregan Pride
                     //break;
                 //case 75532:                               // Darkspear Pride
@@ -7988,9 +7989,9 @@ void Aura::PeriodicDummyTick()
                 case 69008:                                 // Soulstorm (OOC aura)
                 case 68870:                                 // Soulstorm
                 {
-                        uint32 triggerSpells[8] = {68898, 68904, 68886, 68905, 68896, 68906, 68897, 68907};
-                        target->CastSpell(target, triggerSpells[GetAuraTicks() % 8], true);
-                        return;
+                    uint32 triggerSpells[8] = {68898, 68904, 68886, 68905, 68896, 68906, 68897, 68907};
+                    target->CastSpell(target, triggerSpells[GetAuraTicks() % 8], true);
+                    return;
                 }
                 case 66118:                                 // Leeching Swarm 10 man
                 case 68646:

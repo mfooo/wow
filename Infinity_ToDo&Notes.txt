@@ -31,6 +31,10 @@ BUGS_&_ECT ++++++++++++++
 4. eye of acherus is still not unapplying aura 51923  and players are gettign a speed boost til they log out or server gets rebooted 
 
 5. player need to have doiminion over acherus at all time in ebon hold if player is dk and earned it not outside of there 
+
+6. zone saving is a little screwy mangos has done something
+
+7. ytdb has made alot of changes to ebon hold area  need to track them down and get them changed  is restore working order
 ==========================
 In_Progress_Testing ++++++
 ==========================

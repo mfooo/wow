@@ -15883,6 +15883,7 @@ bool Player::MinimalLoadFromDB(uint64 lowguid)
     m_Played_time[PLAYED_TIME_TOTAL] = fields[6].GetUInt32();
     m_Played_time[PLAYED_TIME_LEVEL] = fields[7].GetUInt32();
     m_atLoginFlags = fields[8].GetUInt32();
+	//GetZoneId() = fields[9].GetUInt32();   starting a line of fixes
     uint8 m_race  = fields[11].GetUInt8();
     uint8 m_class = fields[12].GetUInt8();
 
@@ -21669,6 +21670,9 @@ uint32 Player::GetResurrectionSpellId()
 // Used in triggers for check "Only to targets that grant experience or honor" req
 bool Player::isHonorOrXPTarget(Unit* pVictim) const
 {
+    if (!pVictim) 
+        return false;
+
     uint32 v_level = pVictim->getLevel();
     uint32 k_grey  = MaNGOS::XP::GetGrayLevel(getLevel());
 

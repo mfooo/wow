@@ -1,0 +1,41 @@
+ =============================
+TO_DO ++++++++++++++++++++++++
+==============================
+
+1. one day get outdoor pvp implented
+
+2. fix custom tokenvendor and custom talent point stone item ( so far this is all i have tested in customs area )
+
+3. swp and oculus need the new code merged in to make both instances complete  use the best of ech ect ect
+
+4. needs to test each player class and race spell and talent & and start fixing or ect what doesnt work 
+
+=======================
+CORE_BUGS_&_ECT +++++++
+=======================
+1. DK Spell Mind Freeze isnt working
+
+2. DK blood presence is adding improve blood presence to players auras w/o them having the talent and ect  or at least looking that way  
+
+==========================
+In_Progress_Testing ++++++
+==========================
+1. WarHead's Jail _12_18_2010_ Still Testing 2_4_2011
+
+=======================
+SCRIPTDEV2_BUGS ++++++++
+=======================
+1. fix custom tokenvendor and custom talent point stone item ( so far this is all i have tested in customs area )
+
+2.
+========================
+Quests_BUGS_&_ERRORS +++
+========================
+1. eye of acherus is still not unapplying aura 51923  and players are gettign a speed boost til they log out or server gets rebooted  
+
+2. fix bug with quest ambush at overlook   quest works fine   and credit is fine
+
+==================
+DATABASE_BUGS+++++
+==================
+1. ytdb has made alot of changes to ebon hold area  need to track them down and get them changed  is restore working order

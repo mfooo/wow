@@ -31,11 +31,14 @@ SCRIPTDEV2_BUGS ++++++++
 ========================
 Quests_BUGS_&_ERRORS +++
 ========================
+
+-- Ebon Hold - DK Starting Area bugs  confirmed by FallenangelX
 1. eye of acherus is still not unapplying aura 51923  and players are gettign a speed boost til they log out or server gets rebooted  
+   also launching the eye after recall causes weird bugs but first launch works great 
 
 2. fix bug with quest ambush at overlook   quest works fine   and credit is fine
 
 ==================
 DATABASE_BUGS+++++
 ==================
-1. ytdb has made alot of changes to ebon hold area  need to track them down and get them changed  is restore working order
+1. 

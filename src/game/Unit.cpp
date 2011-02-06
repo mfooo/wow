@@ -9237,10 +9237,6 @@ bool Unit::CanHaveThreatList() const
     // pets can not have a threat list, unless they are controlled by a creature
     if (creature->IsPet() && creature->GetOwnerGuid().IsPlayer())
         return false;
-		
-    // Vehicles can't have threat list 
-    if (creature->GetVehicleKit() && (creature->GetMapId() == 607 || creature->GetMapId() == 628))
-        return false;
 
     // charmed units can not have a threat list if charmed by player
     if (creature->GetCharmerGuid().IsPlayer())

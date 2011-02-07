@@ -3539,6 +3539,10 @@ void Spell::EffectTriggerMissileSpell(SpellEffectIndex effect_idx)
     if (triggered_spell_id == 47345 || triggered_spell_id == 47340)
         if (unitTarget)
             unitTarget->CastSpell(unitTarget,triggered_spell_id,true);
+	// Fix Freezing Arrow
+	if (m_caster->GetTypeId() == TYPEID_PLAYER)
+		((Player*)m_caster)->RemoveSpellCooldown(triggered_spell_id);
+	m_caster->CastSpell(m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, spellInfo, true, m_CastItem, 0, m_originalCasterGUID);
 }
 
 void Spell::EffectJump(SpellEffectIndex eff_idx)

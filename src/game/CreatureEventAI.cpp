@@ -1365,23 +1365,6 @@ void CreatureEventAI::DoScriptText(int32 textEntry, WorldObject* pSource, Unit* 
     }
 }
 
-void CreatureEventAI::DoMeleeAttackIfReady()
-{
-    if (!m_creature->getVictim()) 
-        error_log("EAI: DoMeleeAttackIfReady() executed by (entry): %u with victim = NULL", m_creature->GetEntry());
-
-    //Make sure our attack is ready before checking distance
-    if (m_creature->isAttackReady() && m_creature->getVictim())
-    {
-        //If we are within range melee the target
-        if (m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
-        {
-            m_creature->AttackerStateUpdate(m_creature->getVictim());
-            m_creature->resetAttackTimer();
-        }
-    }
-}
-
 bool CreatureEventAI::CanCast(Unit* Target, SpellEntry const *Spell, bool Triggered)
 {
     //No target so we can't cast

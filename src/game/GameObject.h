@@ -456,6 +456,16 @@ struct GameObjectInfo
         }
     }
 
+    uint32 GetCooldown() const                              // not triggering at detection target or use until coolodwn expire
+    {
+        switch(type)
+        {
+            case GAMEOBJECT_TYPE_TRAP:        return trap.cooldown;
+            case GAMEOBJECT_TYPE_GOOBER:      return goober.cooldown;
+            default: return 0;
+        }
+    }
+
     uint32 GetLinkedGameObjectEntry() const
     {
         switch(type)

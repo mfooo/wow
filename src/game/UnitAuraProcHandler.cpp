@@ -2051,6 +2051,10 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                 if(!procSpell)
                     return SPELL_AURA_PROC_FAILED;
 
+                //do not proc from spells that do not need combo points 
+                if(!NeedsComboPoints(procSpell)) 
+                    return SPELL_AURA_PROC_FAILED;
+
                 // energy cost save
                 basepoints[0] = procSpell->manaCost * triggerAmount/100;
                 if (basepoints[0] <= 0)

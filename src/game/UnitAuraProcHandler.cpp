@@ -1309,6 +1309,12 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                     }
                     return SPELL_AURA_PROC_FAILED;
                 }
+                // Arcane Blast proc-off only from arcane school and not from self 
+                case 36032: 
+                { 
+                    if(procSpell->EffectTriggerSpell[1] == 36032 || GetSpellSchoolMask(procSpell) != SPELL_SCHOOL_MASK_ARCANE) 
+                        return SPELL_AURA_PROC_FAILED;
+                }
                 // Glyph of Ice Block
                 case 56372:
                 {

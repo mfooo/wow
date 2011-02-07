@@ -2877,6 +2877,10 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 case 47178:                                 // Plague Effect Self
                     target->SetFeared(apply, GetCasterGuid(), GetId());
                     return;
+                case 56422:                                 // Nerubian Submerge
+                    // not known if there are other things todo, only flag are confirmed valid
+                    target->ApplyModFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE, apply);
+                    return;
                 case 58204:                                 // LK Intro VO (1)
                     if (target->GetTypeId() == TYPEID_PLAYER)
                     {
@@ -4525,6 +4529,17 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
             data << target->GetPackGUID();
             data << uint32(0);
             target->SendMessageToSet(&data, true);
+        }
+		
+        // Seduction (Succubus spell) 
+        if (GetSpellProto()->Id == 6358) 
+        { 
+            Unit* pCaster = GetCaster(); 
+            if(!pCaster) 
+                return; 
+             
+            pCaster->InterruptSpell(CURRENT_CHANNELED_SPELL,false); 
+            return; 
         }
 
         // Wyvern Sting
@@ -7438,14 +7453,14 @@ void Aura::PeriodicTick()
         case SPELL_AURA_PERIODIC_HEALTH_FUNNEL:
         {
             // don't damage target if not alive, possible death persistent effects
-            if (!target->isAlive())
+            if (!target->isAlive())if (!target->IsInWorld() ||  !target->isAlive())
                 return;
 
             Unit *pCaster = GetCaster();
             if(!pCaster)
                 return;
 
-            if(!pCaster->isAlive())
+            if(!pCaster->IsInWorld() || !pCaster->isAlive())
                 return;
 
             if( spellProto->Effect[GetEffIndex()] == SPELL_EFFECT_PERSISTENT_AREA_AURA &&

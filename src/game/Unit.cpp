@@ -6402,6 +6402,8 @@ void Unit::Uncharm()
         charm->RemoveSpellsCausingAura(SPELL_AURA_MOD_CHARM);
         charm->RemoveSpellsCausingAura(SPELL_AURA_MOD_POSSESS);
         charm->RemoveSpellsCausingAura(SPELL_AURA_MOD_POSSESS_PET);
+        charm->RemoveSpellsCausingAura(SPELL_AURA_FLY); 
+        charm->RemoveSpellsCausingAura(SPELL_AURA_MOD_INCREASE_SPEED);
         charm->SetCharmerGuid(ObjectGuid());
     }
 }
@@ -9237,10 +9239,6 @@ bool Unit::CanHaveThreatList() const
     // pets can not have a threat list, unless they are controlled by a creature
     if (creature->IsPet() && creature->GetOwnerGuid().IsPlayer())
         return false;
-		
-    // Vehicles can't have threat list 
-    if (creature->GetVehicleKit() && (creature->GetMapId() == 607 || creature->GetMapId() == 628))
-        return false;
 
     // charmed units can not have a threat list if charmed by player
     if (creature->GetCharmerGuid().IsPlayer())
@@ -9763,6 +9761,11 @@ void Unit::ApplyDiminishingAura( DiminishingGroup group, bool apply )
         }
         break;
     }
+}
+
+Creature* Unit::GetCreature(WorldObject const& object, uint64 guid) 
+{ 
+    return object.GetMap()->GetCreature(guid); 
 }
 
 bool Unit::isVisibleForInState( Player const* u, WorldObject const* viewPoint, bool inVisibleList ) const

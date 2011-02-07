@@ -7557,10 +7557,13 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                 case 51887:
                 case 52694:                                 // Recall Eye of Acherus
                 {
-                    m_caster->RemoveAurasDueToSpell(51852);  //this needs to target the player upon recall
-                    m_caster->RemoveAurasDueToSpell(51923);  //this needs to target the player upon recall
-                    m_caster->RemoveAurasDueToSpell(51890); // this needs to target player upon recall
-                    m_caster->RemoveAurasDueToSpell(530);   // the eye cast the spell recall press 
+                   if (!m_caster || m_caster->GetTypeId() != TYPEID_UNIT)
+                       return;
+                    m_caster->RemoveAurasDueToSpell(530);
+					
+                    //m_caster->RemoveAurasDueToSpell(51852);  //this needs to target the player upon recall
+                    //m_caster->RemoveAurasDueToSpell(51923);  //this needs to target the player upon recall
+                    //m_caster->RemoveAurasDueToSpell(51890); // this needs to target player upon recall
                     return;
                 }
                 case 51962:                                 //Offer Jungle Punch
@@ -9549,7 +9552,7 @@ void Spell::EffectKnockBack(SpellEffectIndex eff_idx)
         if (m_caster->HasAura(62126)) // Glyph of Blast Wave
             return;
 
-    unitTarget->KnockBackFrom(m_caster,float(m_spellInfo->EffectMiscValue[eff_idx])/10,float(damage)/10);
+    unitTarget->KnockBackFrom(m_caster,float(m_spellInfo->EffectMiscValue[eff_idx])/10,float(damage)/30);
 }
 
 void Spell::EffectSendTaxi(SpellEffectIndex eff_idx)

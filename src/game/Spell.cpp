@@ -405,14 +405,12 @@ Spell::Spell( Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid o
             if (m_spellInfo->Effect[j] == 0)
                 continue;
 
-            if(!IsPositiveTarget(m_spellInfo->EffectImplicitTargetA[j], m_spellInfo->EffectImplicitTargetB[j]))
-                m_canReflect = true;
-            else
-                m_canReflect = (m_spellInfo->AttributesEx & SPELL_ATTR_EX_NEGATIVE) ? true : false;
-
-            if(m_canReflect)
+            if(IsPositiveTarget(m_spellInfo->EffectImplicitTargetA[j], m_spellInfo->EffectImplicitTargetB[j]) && !(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NEGATIVE))
                 continue;
             else
+                m_canReflect = true;
+
+            if(m_canReflect)
                 break;
         }
     }
@@ -580,6 +578,20 @@ void Spell::FillTargetMap()
                     case TARGET_EFFECT_SELECT:
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
                         break;
+                    // dest point setup required
+                    case TARGET_AREAEFFECT_INSTANT:
+                    case TARGET_ALL_ENEMY_IN_AREA:
+                    case TARGET_ALL_ENEMY_IN_AREA_CHANNELED:
+                    case TARGET_ALL_FRIENDLY_UNITS_IN_AREA:
+                    case TARGET_AREAEFFECT_GO_AROUND_DEST:
+                    case TARGET_RANDOM_NEARBY_DEST:
+                        // triggered spells get dest point from default target set, ignore it
+                        if (!(m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION) || m_IsTriggeredSpell)
+                            if (WorldObject* castObject = GetAffectiveCasterObject())
+                                m_targets.setDestination(castObject->GetPositionX(), castObject->GetPositionY(), castObject->GetPositionZ());
+                        SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
+                        break;
+                    // target pre-selection required
                     case TARGET_INNKEEPER_COORDINATES:
                     case TARGET_TABLE_X_Y_Z_COORDINATES:
                     case TARGET_CASTER_COORDINATES:
@@ -595,7 +607,6 @@ void Spell::FillTargetMap()
                     case TARGET_POINT_AT_NW:
                     case TARGET_POINT_AT_SE:
                     case TARGET_POINT_AT_SW:
-                    case TARGET_RANDOM_NEARBY_DEST:
                         // need some target for processing
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
@@ -2192,7 +2203,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         }
         case TARGET_DUELVSPLAYER_COORDINATES:
         {
-            if(Unit* currentTarget = m_targets.getUnitTarget())
+            if(m_spellInfo->Id == 71610) 
+                break; 
+            else if(Unit* currentTarget = m_targets.getUnitTarget())
                 m_targets.setDestination(currentTarget->GetPositionX(), currentTarget->GetPositionY(), currentTarget->GetPositionZ());
             break;
         }
@@ -2327,8 +2340,45 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             }
             break;
         case TARGET_ALL_FRIENDLY_UNITS_IN_AREA:
+            // Echoes of Light 
+             if (m_spellInfo->Id == 71610) 
+             { 
+                 CellPair  p(MaNGOS::ComputeCellPair(m_caster->GetPositionX(),  m_caster->GetPositionY())); 
+                 Cell cell(p); 
+                 cell.SetNoCreate(); 
+                 std::list<Unit*> tempTargetUnitMap; 
+                 { 
+                     MaNGOS::AnyFriendlyUnitInObjectRangeCheck  u_check(m_caster, radius); 
+                     MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck>  searcher(tempTargetUnitMap, u_check); 
+  
+                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck>,  WorldTypeMapContainer > world_unit_searcher(searcher); 
+                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck>,  GridTypeMapContainer >  grid_unit_searcher(searcher); 
+ 
+                    cell.Visit(p, world_unit_searcher,  *m_caster->GetMap(), *m_caster, radius); 
+                    cell.Visit(p, grid_unit_searcher,  *m_caster->GetMap(), *m_caster, radius); 
+                } 
+ 
+                if(tempTargetUnitMap.empty()) 
+                    break; 
+ 
+                tempTargetUnitMap.sort(TargetDistanceOrder(m_caster)); 
+ 
+                //Now to get us a random target that's in the initial  range of the spell 
+                uint32 t = 0; 
+                std::list<Unit*>::iterator itr =  tempTargetUnitMap.begin(); 
+                while(itr != tempTargetUnitMap.end() &&  (*itr)->IsWithinDist(m_caster, radius)) 
+                    ++t, ++itr; 
+ 
+                if(!t) 
+                    break;
+ 
+                itr = tempTargetUnitMap.begin(); 
+                std::advance(itr, rand() % t); 
+                Unit *pUnitTarget = *itr; 
+                targetUnitMap.push_back(pUnitTarget); 
+            }
             // Death Pact (in fact selection by player selection)
-            if (m_spellInfo->Id == 48743)
+            else if (m_spellInfo->Id == 48743)
             {
                 // checked in Spell::CheckCast
                 if (m_caster->GetTypeId()==TYPEID_PLAYER)

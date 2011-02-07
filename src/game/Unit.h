@@ -1966,6 +1966,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
 
         void addFollower(FollowerReference* pRef) { m_FollowingRefManager.insertFirst(pRef); }
         void removeFollower(FollowerReference* /*pRef*/ ) { /* nothing to do yet */ }
+        static Creature* GetCreature(WorldObject const& object, uint64 guid);
 
         MotionMaster* GetMotionMaster() { return &i_motionMaster; }
 

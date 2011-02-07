@@ -9761,6 +9761,11 @@ void Unit::ApplyDiminishingAura( DiminishingGroup group, bool apply )
     }
 }
 
+Creature* Unit::GetCreature(WorldObject const& object, uint64 guid) 
+{ 
+    return object.GetMap()->GetCreature(guid); 
+}
+
 bool Unit::isVisibleForInState( Player const* u, WorldObject const* viewPoint, bool inVisibleList ) const
 {
     return isVisibleForOrDetect(u, viewPoint, false, inVisibleList, false);

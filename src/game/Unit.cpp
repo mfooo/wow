@@ -6402,6 +6402,8 @@ void Unit::Uncharm()
         charm->RemoveSpellsCausingAura(SPELL_AURA_MOD_CHARM);
         charm->RemoveSpellsCausingAura(SPELL_AURA_MOD_POSSESS);
         charm->RemoveSpellsCausingAura(SPELL_AURA_MOD_POSSESS_PET);
+        charm->RemoveSpellsCausingAura(SPELL_AURA_FLY); 
+        charm->RemoveSpellsCausingAura(SPELL_AURA_MOD_INCREASE_SPEED);
         charm->SetCharmerGuid(ObjectGuid());
     }
 }

@@ -405,14 +405,12 @@ Spell::Spell( Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid o
             if (m_spellInfo->Effect[j] == 0)
                 continue;
 
-            if(!IsPositiveTarget(m_spellInfo->EffectImplicitTargetA[j], m_spellInfo->EffectImplicitTargetB[j]))
-                m_canReflect = true;
-            else
-                m_canReflect = (m_spellInfo->AttributesEx & SPELL_ATTR_EX_NEGATIVE) ? true : false;
-
-            if(m_canReflect)
+            if(IsPositiveTarget(m_spellInfo->EffectImplicitTargetA[j], m_spellInfo->EffectImplicitTargetB[j]) && !(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NEGATIVE))
                 continue;
             else
+                m_canReflect = true;
+
+            if(m_canReflect)
                 break;
         }
     }

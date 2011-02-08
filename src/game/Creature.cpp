@@ -440,6 +440,10 @@ void Creature::Update(uint32 update_diff, uint32 diff)
             break;
         case DEAD:
         {
+            // no respawn handling for temporary summons
+            if (IsTemporarySummon())
+                break;
+
             if( m_respawnTime <= time(NULL) )
             {
                 DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "Respawning...");

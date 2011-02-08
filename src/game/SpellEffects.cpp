@@ -6455,6 +6455,24 @@ void Spell::EffectThreat(SpellEffectIndex /*eff_idx*/)
     if(!unitTarget->CanHaveThreatList())
         return;
 
+    // pet's growl bonus threat, hacky implementation :-/
+    if( m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && m_spellInfo->SpellIconID == 201)
+    {
+        // search for "guard dog"
+        Unit::AuraList const& mDummyAuras = m_caster->GetAurasByType(SPELL_AURA_DUMMY);
+        for(Unit::AuraList::const_iterator i = mDummyAuras.begin(); i != mDummyAuras.end(); ++i)
+        {
+            SpellEntry const *m_spellProto = (*i)->GetSpellProto();
+            if( m_spellProto && m_spellProto->SpellFamilyName == SPELLFAMILY_PET &&
+                m_spellProto->SpellIconID == 201)
+            {
+                damage+= (*i)->GetModifier()->m_amount*damage/100;
+                break;
+            }
+        }
+    }
+
+
     unitTarget->AddThreat(m_caster, float(damage), false, GetSpellSchoolMask(m_spellInfo), m_spellInfo);
 }
 

@@ -3223,6 +3223,13 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
                 target = this;
                 break;
             }
+            // Guard Dog
+            if (dummySpell->SpellIconID == 201 && procSpell->SpellIconID == 201)
+            {
+                triggered_spell_id = 54445;
+                target = this;
+                break;
+            }
             // Silverback
             if (dummySpell->SpellIconID == 1582 && procSpell->SpellIconID == 201)
             {

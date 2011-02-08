@@ -734,6 +734,7 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         time_t      m_cooldownTime;                         // used as internal reaction delay time store (not state change reaction).
                                                             // For traps this: spell casting cooldown, for doors/buttons: reset time.
         uint32      m_health;
+
         typedef std::set<ObjectGuid> GuidsSet;
 
         GuidsSet m_SkillupSet;                              // players that already have skill-up at GO use

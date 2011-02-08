@@ -7577,12 +7577,13 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                 {
                    if (!m_caster || m_caster->GetTypeId() != TYPEID_UNIT)
                        return;
-                    m_caster->RemoveAurasDueToSpell(530);
-					
-                    //m_caster->RemoveAurasDueToSpell(51852);  //this needs to target the player upon recall
-                    //m_caster->RemoveAurasDueToSpell(51923);  //this needs to target the player upon recall
-                    //m_caster->RemoveAurasDueToSpell(51890); // this needs to target player upon recall
-                    return;
+				   Player* pPlayer = ((Player*)m_caster->GetCharmer());
+				   m_caster->RemoveAurasDueToSpell(530); 
+				   m_caster->RemoveAurasDueToSpell(530);
+				   pPlayer->RemoveAurasDueToSpell(51852);
+				   pPlayer->RemoveAurasDueToSpell(51923);
+				   pPlayer->RemoveAurasDueToSpell(51890);
+				   return;
                 }
                 case 51962:                                 //Offer Jungle Punch
                 {

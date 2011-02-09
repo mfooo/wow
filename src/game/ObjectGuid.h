@@ -73,7 +73,20 @@ enum HighGuid
     HIGHGUID_CORPSE         = 0xF500,                       // blizz F100/F500 used second variant to resolve conflict with HIGHGUID_DYNAMICOBJECT
     HIGHGUID_MO_TRANSPORT   = 0x1FC0,                       // blizz 1FC0 (for GAMEOBJECT_TYPE_MO_TRANSPORT)
     HIGHGUID_INSTANCE       = 0x1F42,                       // blizz 1F42/1F44/1F44/1F47
+    HIGHGUID_GROUP          = 0x1F50,                       // Firstly implemented for Dungeon Finder
 };
+
+// Temporary for dungeon finder compatibility
+#define MAKE_NEW_GUID(l, e, h)   uint64(uint64(l) | (uint64(e) << 24) | (uint64(h) << 48))
+
+//*** Must be replaced by ObjectGuid use ***
+#define IS_PLAYER_GUID(Guid)         ( GUID_HIPART(Guid) == HIGHGUID_PLAYER && Guid!=0 )
+                                                            // special case for empty guid need check
+#define GUID_HIPART(x)   (uint32)((uint64(x) >> 48) & 0x0000FFFF)
+
+// We have different low and middle part size for different guid types
+#define _GUID_LOPART_2(x) (uint32)(uint64(x)         & UI64LIT(0x00000000FFFFFFFF))
+#define _GUID_LOPART_3(x) (uint32)(uint64(x)         & UI64LIT(0x0000000000FFFFFF))
 
 class ObjectGuid;
 class PackedGuid;
@@ -140,6 +153,7 @@ class MANGOS_DLL_SPEC ObjectGuid
         bool IsTransport()     const { return GetHigh() == HIGHGUID_TRANSPORT; }
         bool IsMOTransport()   const { return GetHigh() == HIGHGUID_MO_TRANSPORT; }
         bool IsInstance()      const { return GetHigh() == HIGHGUID_INSTANCE; }
+        bool IsGroup()         const { return GetHigh() == HIGHGUID_GROUP; }
 
         static TypeID GetTypeId(HighGuid high)
         {

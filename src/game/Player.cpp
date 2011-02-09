@@ -7809,14 +7809,14 @@ void Player::_ApplyWeaponDependentAuraCritMod(Item *item, WeaponAttackType attac
 
 void Player::_ApplyWeaponDependentAuraDamageMod(Item *item, WeaponAttackType attackType, Aura* aura, bool apply)
 {
-    // ignore spell mods for not wands
-    Modifier const* modifier = aura->GetModifier();
-    if((modifier->m_miscvalue & SPELL_SCHOOL_MASK_NORMAL)==0 && (getClassMask() & CLASSMASK_WAND_USERS)==0)
-        return;
-
     // generic not weapon specific case processes in aura code
     if(aura->GetSpellProto()->EquippedItemClass == -1)
         return;
+
+    if (item->IsBroken())
+        return;
+
+    Modifier const* modifier = aura->GetModifier();
 
     UnitMods unitMod = UNIT_MOD_END;
     switch(attackType)
@@ -7835,9 +7835,35 @@ void Player::_ApplyWeaponDependentAuraDamageMod(Item *item, WeaponAttackType att
         default: return;
     }
 
-    if (!item->IsBroken()&&item->IsFitToSpellRequirements(aura->GetSpellProto()))
+    // no school check of item dmg school here
+    if (item->IsFitToSpellRequirements(aura->GetSpellProto()))
     {
         HandleStatModifier(unitMod, unitModType, float(modifier->m_amount),apply);
+
+        // aura affects all damage
+        if (aura->GetSpellProto()->AttributesEx5 & SPELL_ATTR_EX5_WEAPON_DMG_MOD_ALL_DAMAGE)
+        {
+            // workaround to prevent double applying:
+            if (attackType != BASE_ATTACK)
+                return;
+
+            // apply bonus to weapons, that don't fit requirements themselves
+            for (uint8 i = OFF_ATTACK; i < MAX_ATTACK; i++)
+                if (Item* pItem = GetWeaponForAttack(WeaponAttackType(i),true,false))
+                    if (!pItem->IsFitToSpellRequirements(aura->GetSpellProto()))
+                        HandleStatModifier(UnitMods(UNIT_MOD_DAMAGE_MAINHAND + i), unitModType, float(modifier->m_amount),apply);
+
+            // send info to client
+            uint32 playerField;
+            if (unitModType == TOTAL_VALUE)
+                playerField = aura->IsPositive() ? PLAYER_FIELD_MOD_DAMAGE_DONE_POS : PLAYER_FIELD_MOD_DAMAGE_DONE_NEG;
+            else
+                playerField = PLAYER_FIELD_MOD_DAMAGE_DONE_PCT;
+
+            for (uint8 i = SPELL_SCHOOL_NORMAL; i < MAX_SPELL_SCHOOL; ++i)
+                if (modifier->m_miscvalue & (1 << i))
+                    ApplyModSignedFloatValue(playerField + i, modifier->m_amount/100.0f, apply);
+        }
     }
 }
 
@@ -9727,6 +9753,17 @@ uint32 Player::GetAttackBySlot( uint8 slot )
         case EQUIPMENT_SLOT_RANGED:   return RANGED_ATTACK;
         default:                      return MAX_ATTACK;
     }
+}
+
+
+SpellSchoolMask Player::GetSchoolMaskForAttackType(WeaponAttackType type) const
+{
+    // Weapons can have different spell schools,
+    // in fact only wands have non-physical schools (at least damage[0]...)
+    if(Item* pItem = GetWeaponForAttack(type))
+        return SpellSchoolMask(1 << pItem->GetProto()->Damage[0].DamageType);
+
+    return SPELL_SCHOOL_MASK_NONE;
 }
 
 bool Player::IsInventoryPos( uint8 bag, uint8 slot )

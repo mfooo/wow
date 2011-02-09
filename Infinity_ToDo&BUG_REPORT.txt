@@ -6,7 +6,7 @@ TO_DO ++++++++++++++++++++++++
 
 2. fix custom tokenvendor and custom talent point stone item ( so far this is all i have tested in customs area )
 
-3. swp and oculus need the new code merged in to make both instances complete  use the best of ech ect ect
+3. fix custom item level up and talent up   and custom reset instance guy 
 
 4. needs to test each player class and race spell and talent & and start fixing or ect what doesnt work 
 
@@ -92,7 +92,7 @@ CLASS_ONLY_SPELLS_TALENT_BUGS+++++
 
 23. death strike =
 
-24. army of dead =
+24. army of dead = after a few days of testing this spell is working  
 
 25. plague strike =
 
@@ -102,7 +102,7 @@ CLASS_ONLY_SPELLS_TALENT_BUGS+++++
 
 28. death and decay =
 
-29. raise dead =
+29. raise dead = after a few days of testing this spell is working  
 
 30. death coil =
 

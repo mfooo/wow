@@ -40,6 +40,7 @@
 #include "Pet.h"
 #include "SocialMgr.h"
 #include "DBCEnums.h"
+#include "LFGMgr.h"
 
 void WorldSession::HandleRepopRequestOpcode( WorldPacket & recv_data )
 {
@@ -265,7 +266,7 @@ void WorldSession::HandleLogoutRequestOpcode( WorldPacket & /*recv_data*/ )
         DoLootRelease(lguid);
 
     //Can not logout if...
-    if( GetPlayer()->isInCombat() ||                        //...is in combat
+    /*if( GetPlayer()->isInCombat() ||                        //...is in combat
         GetPlayer()->duel         ||                        //...is in Duel
                                                             //...is jumping ...is falling
         GetPlayer()->m_movementInfo.HasMovementFlag(MovementFlags(MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR)))
@@ -276,7 +277,7 @@ void WorldSession::HandleLogoutRequestOpcode( WorldPacket & /*recv_data*/ )
         SendPacket( &data );
         LogoutRequest(0);
         return;
-    }
+    }*/
 
     //instant logout in taverns/cities or on taxi or for admins, gm's, mod's if its enabled in mangosd.conf
     if (GetPlayer()->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || GetPlayer()->IsTaxiFlying() ||
@@ -807,8 +808,11 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket & recv_data)
              return;
         }
     }
-
-    GetPlayer()->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT);
+    // Check if we are in LfgGroup and trying to get out the dungeon
+    if (GetPlayer()->GetGroup() && GetPlayer()->GetGroup()->isLFGGroup() && GetPlayer()->GetMap()->IsDungeon() && at->target_mapId != GetPlayer()->GetMapId())
+        sLFGMgr.TeleportPlayer(GetPlayer(), true);
+    else
+        GetPlayer()->TeleportTo(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation, TELE_TO_NOT_LEAVE_TRANSPORT);
 }
 
 void WorldSession::HandleUpdateAccountData(WorldPacket &recv_data)
@@ -1474,12 +1478,12 @@ void WorldSession::HandleCancelMountAuraOpcode( WorldPacket & /*recv_data*/ )
         return;
     }
 
-    /*  Flying Everywhere   */
+    /*  Flying Everywhere   */     // THIS IS WHERE PLAYER WONT UNMOUNT IN GHOST FORM  should try a && isalive and see if that solves trouble
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE) && _player->HasAuraTypeFlyingSpell())
         _player->SetFlyingMountTimer();
     else
     {
-        _player->Unmount();
+        _player->Unmount(_player->HasAuraType(SPELL_AURA_MOUNTED));
         _player->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
     }
 }

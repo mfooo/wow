@@ -27,6 +27,11 @@ CreatureAI::~CreatureAI()
 
 void CreatureAI::AttackedBy( Unit* attacker )
 {
+    /// TEST THIS OUT after fixing
+    // vehicle dont have threat list, so this is unnecessary, because it calls move chase
+    //if(m_creature->IsVehicle())
+   //     return;
+		
     if(!m_creature->getVictim())
         AttackStart(attacker);
 }
@@ -116,4 +121,24 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
     }
     else
         return CAST_FAIL_IS_CASTING;
+}
+
+bool CreatureAI::DoMeleeAttackIfReady()
+{
+    // Check target
+    if (!m_creature->getVictim())
+        return false;
+
+    // Make sure our attack is ready before checking distance
+    if (!m_creature->isAttackReady())
+        return false;
+
+    // If we are within range melee the target
+    if (!m_creature->CanReachWithMeleeAttack(m_creature->getVictim()))
+        return false;
+
+    m_creature->AttackerStateUpdate(m_creature->getVictim());
+    m_creature->resetAttackTimer();
+
+    return true;
 }

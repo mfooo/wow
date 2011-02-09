@@ -633,6 +633,19 @@ bool IsPositiveEffect(uint32 spellId, SpellEffectIndex effIndex)
     SpellEntry const *spellproto = sSpellStore.LookupEntry(spellId);
     if (!spellproto)
         return false;
+	
+	switch(spellId)
+	{
+		case 47540: // Penance start dummy aura - Rank 1
+		case 53005:	// Penance start dummy aura - Rank 2
+		case 53006:	// Penance start dummy aura - Rank 3
+		case 53007: // Penance start dummy aura - Rank 4
+		case 47757:	// Penance heal effect trigger - Rank 1
+		case 52986:	// Penance heal effect trigger - Rank 2
+		case 52987:	// Penance heal effect trigger - Rank 3
+		case 52988:	// Penance heal effect trigger - Rank 4
+			return true;
+	}
 
     switch(spellproto->Effect[effIndex])
     {
@@ -1856,6 +1869,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                         (spellInfo_2->Id == 57055 && spellInfo_1->Id == 56648))
                         return true;
 
+                    // Cologne Immune and Perfume Immune
+                    if ((spellInfo_1->Id == 68529 && spellInfo_2->Id == 68530) ||
+                        (spellInfo_2->Id == 68529 && spellInfo_1->Id == 68530))
+                        return true;
+
                     // Thunderfury
                     if ((spellInfo_1->Id == 21992 && spellInfo_2->Id == 27648) ||
                         (spellInfo_2->Id == 21992 && spellInfo_1->Id == 27648))
@@ -2086,6 +2104,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 if ((spellInfo_1->SpellIconID == 456 && spellInfo_2->SpellIconID == 2006) ||
                     (spellInfo_2->SpellIconID == 456 && spellInfo_1->SpellIconID == 2006))
                     return false;
+
+                // Defensive/Berserker/Battle stance aura can not stack (needed for dummy auras)
+                if (((spellInfo_1->SpellFamilyFlags & UI64LIT(0x800000)) && (spellInfo_2->SpellFamilyFlags & UI64LIT(0x800000))) ||
+                    ((spellInfo_2->SpellFamilyFlags & UI64LIT(0x800000)) && (spellInfo_1->SpellFamilyFlags & UI64LIT(0x800000))))
+                    return true;
             }
 
             // Hamstring -> Improved Hamstring (multi-family check)
@@ -3970,6 +3993,8 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const *spell
         case 69065:                                         // Impaled
         case 69126:                                         // Pungent blight - first aura
         case 69152:                                         // Gazeous blight - first aura
+        case 69157:                                         // Pungent blight - second aura 
+        case 69195:                                         // Pungent blight 
         case 72293:                                         // Mark of the Fallen Champion
             return map_id == 631 ? SPELL_CAST_OK : SPELL_FAILED_INCORRECT_AREA;
     }

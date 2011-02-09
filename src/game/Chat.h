@@ -197,6 +197,7 @@ class ChatHandler
         bool HandleDebugSpellModsCommand(char* args);
         bool HandleDebugUpdateWorldStateCommand(char* args);
         bool HandleDebugEnterVehicleCommand(char* args);
+        bool HandleSetVehicleIdCommand(char* args);
         bool HandleDebugSendCalendarResultCommand(char* args);
 
         bool HandleDebugPlayCinematicCommand(char* args);
@@ -534,6 +535,7 @@ class ChatHandler
         bool HandleTaxiCheatCommand(char* args);
         bool HandleWhispersCommand(char* args);
         bool HandleModifyDrunkCommand(char* args);
+        bool HandleSetViewCommand(char* args);
 
         bool HandleLoadScriptsCommand(char* args);
 

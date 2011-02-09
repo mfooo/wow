@@ -1689,90 +1689,6 @@ void ObjectMgr::RemoveGameobjectFromGrid(uint32 guid, GameObjectData const* data
     }
 }
 
-void ObjectMgr::LoadCreatureRespawnTimes()
-{
-    // remove outdated data
-    CharacterDatabase.DirectExecute("DELETE FROM creature_respawn WHERE respawntime <= UNIX_TIMESTAMP(NOW())");
-
-    uint32 count = 0;
-
-    QueryResult *result = CharacterDatabase.Query("SELECT guid, respawntime, instance FROM creature_respawn");
-
-    if(!result)
-    {
-        barGoLink bar(1);
-
-        bar.step();
-
-        sLog.outString();
-        sLog.outString(">> Loaded 0 creature respawn time.");
-        return;
-    }
-
-    barGoLink bar((int)result->GetRowCount());
-
-    do
-    {
-        Field *fields = result->Fetch();
-        bar.step();
-
-        uint32 loguid       = fields[0].GetUInt32();
-        uint64 respawn_time = fields[1].GetUInt64();
-        uint32 instance     = fields[2].GetUInt32();
-
-        mCreatureRespawnTimes[MAKE_PAIR64(loguid,instance)] = time_t(respawn_time);
-
-        ++count;
-    } while (result->NextRow());
-
-    delete result;
-
-    sLog.outString( ">> Loaded %lu creature respawn times", (unsigned long)mCreatureRespawnTimes.size() );
-    sLog.outString();
-}
-
-void ObjectMgr::LoadGameobjectRespawnTimes()
-{
-    // remove outdated data
-    CharacterDatabase.DirectExecute("DELETE FROM gameobject_respawn WHERE respawntime <= UNIX_TIMESTAMP(NOW())");
-
-    uint32 count = 0;
-
-    QueryResult *result = CharacterDatabase.Query("SELECT guid, respawntime, instance FROM gameobject_respawn");
-
-    if(!result)
-    {
-        barGoLink bar(1);
-
-        bar.step();
-
-        sLog.outString();
-        sLog.outString(">> Loaded 0 gameobject respawn time.");
-        return;
-    }
-
-    barGoLink bar((int)result->GetRowCount());
-
-    do
-    {
-        Field *fields = result->Fetch();
-        bar.step();
-
-        uint32 loguid       = fields[0].GetUInt32();
-        uint64 respawn_time = fields[1].GetUInt64();
-        uint32 instance     = fields[2].GetUInt32();
-
-        mGORespawnTimes[MAKE_PAIR64(loguid,instance)] = time_t(respawn_time);
-
-        ++count;
-    } while (result->NextRow());
-
-    delete result;
-
-    sLog.outString( ">> Loaded %lu gameobject respawn times", (unsigned long)mGORespawnTimes.size() );
-    sLog.outString();
-}
-
 // name must be checked to correctness (if received) before call this function
 uint64 ObjectMgr::GetPlayerGUIDByName(std::string name) const
 {
@@ -3883,8 +3799,8 @@ void ObjectMgr::LoadGroups()
 
     // -- loading members --
     count = 0;
-    //                                       0           1          2         3
-    result = CharacterDatabase.Query("SELECT memberGuid, assistant, subgroup, groupId FROM group_member ORDER BY groupId");
+    //                                       0           1          2         3      4
+    result = CharacterDatabase.Query("SELECT memberGuid, assistant, subgroup, roles, groupId FROM group_member ORDER BY groupId");
     if (!result)
     {
         barGoLink bar2( 1 );
@@ -3905,7 +3821,8 @@ void ObjectMgr::LoadGroups()
             ObjectGuid memberGuid = ObjectGuid(HIGHGUID_PLAYER, memberGuidlow);
             bool   assistent     = fields[1].GetBool();
             uint8  subgroup      = fields[2].GetUInt8();
-            uint32 groupId       = fields[3].GetUInt32();
+            uint8  roles         = fields[3].GetUInt8();
+            uint32 groupId       = fields[4].GetUInt32();
             if (!group || group->GetId() != groupId)
             {
                 group = GetGroupById(groupId);
@@ -3918,7 +3835,7 @@ void ObjectMgr::LoadGroups()
                 }
             }
 
-            if (!group->LoadMemberFromDB(memberGuidlow, subgroup, assistent))
+            if (!group->LoadMemberFromDB(memberGuidlow, subgroup, roles, assistent))
             {
                 sLog.outErrorDb("Incorrect entry in group_member table : member %s cannot be added to group (Id: %u)!",
                     memberGuid.GetString().c_str(), groupId);
@@ -4979,9 +4896,9 @@ void ObjectMgr::LoadInstanceTemplate()
             continue;
         }
 
-        if (mapEntry->IsContinent())
+        if (!mapEntry->Instanceable())
         {
-            sLog.outErrorDb("ObjectMgr::LoadInstanceTemplate: continent mapid %d for template!", temp->map);
+            sLog.outErrorDb("ObjectMgr::LoadInstanceTemplate: non-instanceable mapid %d for template!", temp->map);
             sInstanceTemplate.EraseEntry(i);
             continue;
         }
@@ -5009,6 +4926,46 @@ void ObjectMgr::LoadInstanceTemplate()
     }
 
     sLog.outString( ">> Loaded %u Instance Template definitions", sInstanceTemplate.RecordCount );
+    sLog.outString();
+}
+
+struct SQLWorldLoader : public SQLStorageLoaderBase<SQLWorldLoader>
+{
+    template<class D>
+    void convert_from_str(uint32 /*field_pos*/, char const *src, D &dst)
+    {
+        dst = D(sScriptMgr.GetScriptId(src));
+    }
+};
+
+void ObjectMgr::LoadWorldTemplate()
+{
+    SQLWorldLoader loader;
+    loader.Load(sWorldTemplate, false);
+
+    for(uint32 i = 0; i < sWorldTemplate.MaxEntry; i++)
+    {
+        WorldTemplate const* temp = GetWorldTemplate(i);
+        if (!temp)
+            continue;
+
+        MapEntry const* mapEntry = sMapStore.LookupEntry(temp->map);
+        if (!mapEntry)
+        {
+            sLog.outErrorDb("ObjectMgr::LoadWorldTemplate: bad mapid %d for template!", temp->map);
+            sWorldTemplate.EraseEntry(i);
+            continue;
+        }
+
+        if (mapEntry->Instanceable())
+        {
+            sLog.outErrorDb("ObjectMgr::LoadWorldTemplate: instanceable mapid %d for template!", temp->map);
+            sWorldTemplate.EraseEntry(i);
+            continue;
+        }
+    }
+
+    sLog.outString( ">> Loaded %u World Template definitions", sWorldTemplate.RecordCount );
     sLog.outString();
 }
 
@@ -7212,17 +7169,6 @@ void ObjectMgr::LoadWeatherZoneChances()
     sLog.outString(">> Loaded %u weather definitions", count);
 }
 
-void ObjectMgr::SaveCreatureRespawnTime(uint32 loguid, uint32 instance, time_t t)
-{
-    mCreatureRespawnTimes[MAKE_PAIR64(loguid,instance)] = t;
-
-    CharacterDatabase.BeginTransaction();
-    CharacterDatabase.PExecute("DELETE FROM creature_respawn WHERE guid = '%u' AND instance = '%u'", loguid, instance);
-    if(t)
-        CharacterDatabase.PExecute("INSERT INTO creature_respawn VALUES ( '%u', '" UI64FMTD "', '%u' )", loguid, uint64(t), instance);
-    CharacterDatabase.CommitTransaction();
-}
-
 void ObjectMgr::DeleteCreatureData(uint32 guid)
 {
     // remove mapid*cellid -> guid_set map
@@ -7231,45 +7177,6 @@ void ObjectMgr::DeleteCreatureData(uint32 guid)
         RemoveCreatureFromGrid(guid, data);
 
     mCreatureDataMap.erase(guid);
-}
-
-void ObjectMgr::SaveGORespawnTime(uint32 loguid, uint32 instance, time_t t)
-{
-    mGORespawnTimes[MAKE_PAIR64(loguid,instance)] = t;
-
-    CharacterDatabase.BeginTransaction();
-    CharacterDatabase.PExecute("DELETE FROM gameobject_respawn WHERE guid = '%u' AND instance = '%u'", loguid, instance);
-    if(t)
-        CharacterDatabase.PExecute("INSERT INTO gameobject_respawn VALUES ( '%u', '" UI64FMTD "', '%u' )", loguid, uint64(t), instance);
-    CharacterDatabase.CommitTransaction();
-}
-
-void ObjectMgr::DeleteRespawnTimeForInstance(uint32 instance)
-{
-    RespawnTimes::iterator next;
-
-    for(RespawnTimes::iterator itr = mGORespawnTimes.begin(); itr != mGORespawnTimes.end(); itr = next)
-    {
-        next = itr;
-        ++next;
-
-        if (PAIR64_HIPART(itr->first)==instance)
-            mGORespawnTimes.erase(itr);
-    }
-
-    for(RespawnTimes::iterator itr = mCreatureRespawnTimes.begin(); itr != mCreatureRespawnTimes.end(); itr = next)
-    {
-        next = itr;
-        ++next;
-
-        if (PAIR64_HIPART(itr->first)==instance)
-            mCreatureRespawnTimes.erase(itr);
-    }
-
-    CharacterDatabase.BeginTransaction();
-    CharacterDatabase.PExecute("DELETE FROM creature_respawn WHERE instance = '%u'", instance);
-    CharacterDatabase.PExecute("DELETE FROM gameobject_respawn WHERE instance = '%u'", instance);
-    CharacterDatabase.CommitTransaction();
 }
 
 void ObjectMgr::DeleteGOData(uint32 guid)
@@ -7845,6 +7752,11 @@ const char *ObjectMgr::GetMangosString(int32 entry, int locale_idx) const
     return "<error>";
 }
 
+const char * GetMangosString(int32 entry, int locale_idx) 
+{ 
+  return sObjectMgr.GetMangosString(entry, locale_idx); 
+}
+
 void ObjectMgr::LoadSpellDisabledEntrys()
 {
     m_spell_disabled.clear();                                // need for reload case
@@ -8023,7 +7935,7 @@ bool PlayerCondition::Meets(Player const * player) const
         }
         case CONDITION_NO_AURA:
             return !player->HasAura(value1, SpellEffectIndex(value2));
-        case CONDITION_ACTIVE_EVENT:
+        case CONDITION_ACTIVE_GAME_EVENT:
             return sGameEventMgr.IsActiveEvent(value1);
         case CONDITION_AREA_FLAG:
         {
@@ -8104,6 +8016,12 @@ bool PlayerCondition::Meets(Player const * player) const
             return player->HasItemCount(value1, value2, true);
         case CONDITION_NOITEM_WITH_BANK:
             return !player->HasItemCount(value1, value2, true);
+        case CONDITION_NOT_ACTIVE_GAME_EVENT:
+            return !sGameEventMgr.IsActiveEvent(value1);
+        case CONDITION_ACTIVE_HOLIDAY:
+            return sGameEventMgr.IsActiveHoliday(HolidayIds(value1));
+        case CONDITION_NOT_ACTIVE_HOLIDAY:
+            return !sGameEventMgr.IsActiveHoliday(HolidayIds(value1));
         default:
             return false;
     }
@@ -8252,10 +8170,10 @@ bool PlayerCondition::IsValid(ConditionType condition, uint32 value1, uint32 val
             }
             break;
         }
-        case CONDITION_ACTIVE_EVENT:
+        case CONDITION_ACTIVE_GAME_EVENT:
+        case CONDITION_NOT_ACTIVE_GAME_EVENT:
         {
-            GameEventMgr::GameEventDataMap const& events = sGameEventMgr.GetEventMap();
-            if (value1 >=events.size() || !events[value1].isValid())
+            if (!sGameEventMgr.IsValidEvent(value1))
             {
                 sLog.outErrorDb("Active event (%u) condition requires existing event id (%u), skipped", condition, value1);
                 return false;
@@ -8350,6 +8268,16 @@ bool PlayerCondition::IsValid(ConditionType condition, uint32 value1, uint32 val
                 return false;
             }
 
+            break;
+        }
+        case CONDITION_ACTIVE_HOLIDAY:
+        case CONDITION_NOT_ACTIVE_HOLIDAY:
+        {
+            if (!sHolidaysStore.LookupEntry(value1))
+            {
+                sLog.outErrorDb("Active holiday (%u) condition requires existing holiday id (%u), skipped", condition, value1);
+                return false;
+            }
             break;
         }
         case CONDITION_NONE:
@@ -9335,6 +9263,101 @@ void ObjectMgr::AddArenaTeam( ArenaTeam* arenaTeam )
 void ObjectMgr::RemoveArenaTeam( uint32 Id )
 {
     mArenaTeamMap.erase(Id);
+}
+
+void ObjectMgr::LoadAccessRequirements()
+{
+    mAccessRequirements.clear();                                  // need for reload case
+
+    uint32 count = 0;
+
+    //                                                           0           1          2          3     4      5             6             7                      8                  9
+    QueryResult* result = WorldDatabase.Query("SELECT mapid, difficulty, level_min, level_max, item, item2, quest_done_A, quest_done_H, completed_achievement, quest_failed_text FROM access_requirement");
+    if (!result)
+    {
+
+        barGoLink bar(1);
+
+        bar.step();
+
+        sLog.outString();
+        sLog.outString(">> Loaded %u access requirement definitions", count);
+        return;
+    }
+    barGoLink bar(result->GetRowCount());
+
+    do
+    {
+        Field *fields = result->Fetch();
+
+        bar.step();
+
+        ++count;
+
+        uint32 mapid = fields[0].GetUInt32();
+        uint8 difficulty = fields[1].GetUInt8();
+        uint32 requirement_ID = MAKE_PAIR32(mapid,difficulty);
+        AccessRequirement ar;
+        ar.levelMin                 = fields[2].GetUInt8();
+        ar.levelMax                 = fields[3].GetUInt8();
+        ar.item                     = fields[4].GetUInt32();
+        ar.item2                    = fields[5].GetUInt32();
+        ar.quest_A                  = fields[6].GetUInt32();
+        ar.quest_H                  = fields[7].GetUInt32();
+        ar.achievement              = fields[8].GetUInt32();
+        ar.questFailedText          = fields[9].GetCppString();
+
+        if (ar.item)
+        {
+            ItemPrototype const *pProto = GetItemPrototype(ar.item);
+            if (!pProto)
+            {
+                sLog.outError("Key item %u does not exist for map %u difficulty %u, removing key requirement.", ar.item, mapid, difficulty);
+                ar.item = 0;
+            }
+        }
+
+        if (ar.item2)
+        {
+            ItemPrototype const *pProto = GetItemPrototype(ar.item2);
+            if (!pProto)
+            {
+                sLog.outError("Second item %u does not exist for map %u difficulty %u, removing key requirement.", ar.item2, mapid, difficulty);
+                ar.item2 = 0;
+            }
+        }
+
+        if (ar.quest_A)
+        {
+            if (!GetQuestTemplate(ar.quest_A))
+            {
+                sLog.outErrorDb("Required Alliance Quest %u not exist for map %u difficulty %u, remove quest done requirement.", ar.quest_A, mapid, difficulty);
+                ar.quest_A = 0;
+            }
+        }
+
+        if (ar.quest_H)
+        {
+            if (!GetQuestTemplate(ar.quest_H))
+            {
+                sLog.outErrorDb("Required Horde Quest %u not exist for map %u difficulty %u, remove quest done requirement.", ar.quest_H, mapid, difficulty);
+                ar.quest_H = 0;
+            }
+        }
+
+        if (ar.achievement)
+        {
+            if (!sAchievementStore.LookupEntry(ar.achievement))
+            {
+                sLog.outErrorDb("Required Achievement %u not exist for map %u difficulty %u, remove quest done requirement.", ar.achievement, mapid, difficulty);
+                ar.achievement = 0;
+            }
+        }
+        mAccessRequirements[requirement_ID] = ar;
+    } while (result->NextRow());
+
+    sLog.outString();
+    sLog.outString(">> Loaded %u access requirement definitions", count);
 }
 
 // Functions for scripting access

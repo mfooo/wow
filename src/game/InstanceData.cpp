@@ -23,10 +23,20 @@
 
 void InstanceData::SaveToDB()
 {
-    if(!Save()) return;
+    // no reason to save BGs/Arenas
+    if (instance->IsBattleArena())
+        return;
+
+    if (!Save())
+        return;
+
     std::string data = Save();
     CharacterDatabase.escape_string(data);
-    CharacterDatabase.PExecute("UPDATE instance SET data = '%s' WHERE id = '%u'", data.c_str(), instance->GetInstanceId());
+
+    if (instance->Instanceable())
+        CharacterDatabase.PExecute("UPDATE instance SET data = '%s' WHERE id = '%u'", data.c_str(), instance->GetInstanceId());
+    else
+        CharacterDatabase.PExecute("UPDATE world SET data = '%s' WHERE map = '%u'", data.c_str(), instance->GetId());
 }
 
 bool InstanceData::CheckAchievementCriteriaMeet( uint32 criteria_id, Player const* /*source*/, Unit const* /*target*/ /*= NULL*/, uint32 /*miscvalue1*/ /*= 0*/ )
@@ -41,4 +51,14 @@ bool InstanceData::CheckConditionCriteriaMeet(Player const* /*source*/, uint32 m
     sLog.outError("Condition system call InstanceData::CheckConditionCriteriaMeet but instance script for map %u not have implementation for player condition criteria with internal id %u for map %u",
         instance->GetId(), instance_condition_id, map_id);
     return false;
+}
+
+void InstanceData::HandleGameObject(uint64 GUID, bool open, GameObject *go) 
+{ 
+    if (!go) 
+        go = instance->GetGameObject(GUID); 
+    if (go) 
+        go->SetGoState(open ? GO_STATE_ACTIVE : GO_STATE_READY); 
+    else 
+        debug_log("TSCR: InstanceData: HandleGameObject failed");
 }

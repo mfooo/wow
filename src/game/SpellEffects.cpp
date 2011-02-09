@@ -7578,7 +7578,6 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                    if (!m_caster || m_caster->GetTypeId() != TYPEID_UNIT)
                        return;
 				   Player* pPlayer = ((Player*)m_caster->GetCharmer());
-				   m_caster->RemoveAurasDueToSpell(530); 
 				   m_caster->RemoveAurasDueToSpell(530);
 				   pPlayer->RemoveAurasDueToSpell(51852);
 				   pPlayer->RemoveAurasDueToSpell(51923);

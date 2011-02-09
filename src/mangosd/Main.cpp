@@ -152,8 +152,8 @@ extern int main(int argc, char **argv)
     sLog.outString( "%s [world-daemon]", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID) );
     sLog.outString( "<Ctrl-C> to stop.\n\n" );
 
-    sLog.outTitle( "               P   R   O   J   E   C   T __ The Infinity Project __           ");	
-    sLog.outTitle( "              A Special Made Core For & By FallenAngelX           I            ");	
+    sLog.outTitle( "               P   R   O   J   E   C   T __ The Infinity Project __            ");	
+    sLog.outTitle( "              A Special Designed Project To Be The Best           I            ");	
     sLog.outTitle( ":::::::::      :::     :::        :::     ::::::::   :::::::::     N   P       ");
     sLog.outTitle( ":+:          :+: :+:   :+:        :+:     :+:        :+:    :+:     F   R      ");
     sLog.outTitle( "+:+         +:+   +:+  +:+        +:+     +:+        +:+     +:+     I   O     ");
@@ -163,6 +163,7 @@ extern int main(int argc, char **argv)
     sLog.outTitle( "###        ###     ### #######    ####### ########   ###     ###         Y   T ");
     sLog.outTitle( "Special Made Core By and for The Players                                       ");	
     sLog.outTitle( "Github.com/fallenangelX/(Retired Developer From Hellscream & Dark_Ice)         ");
+    sLog.outTitle( "Github.com/singlem/(Retired Developer From Hellscream & Dark_Ice)              ");
     sLog.outTitle( "Project The InFinity Project  Core Developed orginally for TheFallen_Server    ");
 
     sLog.outString("Using configuration file %s.", cfg_file);

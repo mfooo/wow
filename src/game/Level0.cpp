@@ -128,8 +128,9 @@ bool ChatHandler::HandleServerInfoCommand(char* /*args*/)
     PSendSysMessage(LANG_UPTIME, str.c_str());
     SendSysMessage("Welcome to The Infinity Project");
     SendSysMessage("GIT: http://github.com/FallenAngelX");
-	SendSysMessage("Please feel free to post bugs and Fixes on GiT ");
-    SendSysMessage("A heavily modified MaNGOS core & SD2 System");
+    SendSysMessage("GIT: http://github.com/Singlem");
+	SendSysMessage("Please feel free to post bugs and Fixes on github.com ");
+    SendSysMessage("A heavily modified MaNGOS Core & Database & SD2 System");
 
     return true;
 }

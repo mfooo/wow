@@ -7415,7 +7415,7 @@ void Aura::PeriodicTick()
         case SPELL_AURA_PERIODIC_HEALTH_FUNNEL:
         {
             // don't damage target if not alive, possible death persistent effects
-            if (!target->isAlive())if (!target->IsInWorld() ||  !target->isAlive())
+            if (!target->IsInWorld() ||  !target->isAlive())
                 return;
 
             Unit *pCaster = GetCaster();

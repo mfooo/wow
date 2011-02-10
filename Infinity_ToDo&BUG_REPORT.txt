@@ -45,6 +45,7 @@ DATABASE_BUGS+++++
 ==================================
 CLASS_ONLY_SPELLS_TALENT_BUGS+++++
 ==================================
+Testing of these spells was more then just  hitting the button and see if they are working  forumla and ect are looked over as well 8)
 =--/ DEATHKNIGHT \--=
 1. Runeforaging = 
 
@@ -72,7 +73,7 @@ CLASS_ONLY_SPELLS_TALENT_BUGS+++++
 
 13. empowerRune weapon =
 
-14. mind freeze =
+14. mind freeze = This spell isnt working  ,,,, no effect nothing ,no visual 
 
 15. frost fever =
 

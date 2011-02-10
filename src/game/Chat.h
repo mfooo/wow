@@ -584,6 +584,9 @@ class ChatHandler
         bool HandleWaterwalkCommand(char* args);
 		bool HandlePlayerbotCommand(char* args);
         bool HandleQuitCommand(char* args);
+        bool HandleFreezeCommand(char *args);
+        bool HandleUnFreezeCommand(char *args);
+        bool HandleListFreezeCommand(char* args);
 		
 
         // Jail by WarHead

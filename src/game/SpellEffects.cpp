@@ -3801,6 +3801,10 @@ void Spell::EffectApplyAura(SpellEffectIndex eff_idx)
 {
     if(!unitTarget)
         return;
+		
+     //Hack for Obsidian Sanctum Spell Flame Tsunami Damage Aura (57492) 
+     if(unitTarget->GetTypeId() == TYPEID_PLAYER && m_spellInfo->Id == 60430) 
+        return;
 
     // ghost spell check, allow apply any auras at player loading in ghost mode (will be cleanup after load)
     if ( (!unitTarget->isAlive() && !(IsDeathOnlySpell(m_spellInfo) || IsDeathPersistentSpell(m_spellInfo))) &&

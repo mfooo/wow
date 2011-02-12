@@ -7594,6 +7594,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                 case 52694:                                 // Recall Eye of Acherus
                 {
                    if (!m_caster || m_caster->GetTypeId() != TYPEID_UNIT)
+                   ((creature*)m_caster)->Forcedespawn;
                        return;
 				   Player* pPlayer = ((Player*)m_caster->GetCharmer());
 				   m_caster->RemoveAurasDueToSpell(530);

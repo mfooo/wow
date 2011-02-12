@@ -611,7 +611,6 @@ class MANGOS_DLL_SPEC Creature : public Unit
         static void SpawnInMaps(uint32 db_guid, CreatureData const* data);
 
         void StartGroupLoot(Group* group, uint32 timer);
-
         void SendZoneUnderAttackMessage(Player* attacker);
 
         void SetInCombatWithZone();

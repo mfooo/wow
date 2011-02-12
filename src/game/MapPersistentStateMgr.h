@@ -35,6 +35,7 @@ struct MapEntry;
 struct MapDifficulty;
 class Player;
 class Group;
+class Map;
 
 class MapPersistentStateManager;
 

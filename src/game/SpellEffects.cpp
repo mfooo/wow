@@ -9859,17 +9859,15 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
             float max_dis = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
             float dis = rand_norm_f() * (max_dis - min_dis) + min_dis;
 
-<<<<<<< HEAD
             m_caster->GetClosePoint(fx, fy, fz, DEFAULT_WORLD_OBJECT_SIZE, dis);
         }
-=======
+
     if(!pGameObj->Create(cMap->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), name_id, cMap,
         m_caster->GetPhaseMask(), fx, fy, fz, m_caster->GetOrientation(), 0.0f, 0.0f, 0.0f, 0.0f, GO_ANIMPROGRESS_DEFAULT, GO_STATE_READY))
     {
         delete pGameObj;
         return;
     }
->>>>>>> bbc6324526ca126a9d600353539d01245b18e093
 
         Map *cMap = m_caster->GetMap();
 

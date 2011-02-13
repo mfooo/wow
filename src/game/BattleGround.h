@@ -214,7 +214,6 @@ enum ScoreType
     SCORE_DAMAGE_TAKEN          = 18,
     SCORE_HEALING_TAKEN         = 19
     /** World of Warcraft Armory **/
-
 };
 
 enum ArenaType

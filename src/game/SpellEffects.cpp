@@ -58,6 +58,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
+#include "ObjectMgr.h"
 
 pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
 {
@@ -9859,16 +9860,10 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
             float max_dis = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
             float dis = rand_norm_f() * (max_dis - min_dis) + min_dis;
 
+
             m_caster->GetClosePoint(fx, fy, fz, DEFAULT_WORLD_OBJECT_SIZE, dis);
         }
-
-    if(!pGameObj->Create(cMap->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), name_id, cMap,
-        m_caster->GetPhaseMask(), fx, fy, fz, m_caster->GetOrientation(), 0.0f, 0.0f, 0.0f, 0.0f, GO_ANIMPROGRESS_DEFAULT, GO_STATE_READY))
-    {
-        delete pGameObj;
-        return;
-    }
-
+		
         Map *cMap = m_caster->GetMap();
 
         if(goinfo->type==GAMEOBJECT_TYPE_FISHINGNODE)
@@ -9893,7 +9888,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
 
         GameObject* pGameObj = new GameObject;
 
-        if(!pGameObj->Create(sObjectMgr.GenerateLowGuid(HIGHGUID_GAMEOBJECT), name_id, cMap,
+        if (!pGameObj->Create(cMap->GenerateLocalLowGuid(HIGHGUID_GAMEOBJECT), name_id, cMap,
             m_caster->GetPhaseMask(), fx, fy, fz, m_caster->GetOrientation(), 0.0f, 0.0f, 0.0f, 0.0f, GO_ANIMPROGRESS_DEFAULT, GO_STATE_READY))
         {
             delete pGameObj;

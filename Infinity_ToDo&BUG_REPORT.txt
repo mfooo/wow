@@ -97,7 +97,7 @@ Testing of these spells was more then just  hitting the button and see if they a
 
 25. plague strike =
 
-26. blood pauge =
+26. blood plauge =
 
 27. raise ally =
 
@@ -110,6 +110,70 @@ Testing of these spells was more then just  hitting the button and see if they a
 31. unholy presence =
 
 32. death grip =
+
+33. runic focus =
+
+34. death gate = 
+
+===== Talents =====
+
+== Blood ==
+
+1. butchery =
+
+2. subversion = 
+
+3. blade barrier =
+
+4. bladed armor =
+
+5. scent of blood =
+
+6. two-handed specialization = 
+
+7. rune tap =
+
+8. dark conviction = 
+
+9. death rune mastery =
+
+10. improved rune tap =
+
+11. spell deflection =
+
+12. vendetta = 
+
+13. bloody strikes =
+
+14. veteran of the third war 
+
+15. mark of blood =
+
+16. bloody vengeance =
+
+17.abomination might =
+
+18. blood worms = 
+
+19. hysteria = 
+
+20. blood aura =
+
+21. sudden doom = 
+
+22. vampiric blood =
+
+23. will of the necropolis = 
+
+24. heart strike =
+
+25. might of mograine = 
+
+26. blood gorged = 
+
+27. dancing rune weapon = 
+
+==== Frost =====
 
 ===================
 //->Warrior<-\\

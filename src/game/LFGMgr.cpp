@@ -867,7 +867,7 @@ bool LFGMgr::CheckCompatibility(LfgGuidList check, LfgProposal*& pProposal)
         return false;
     }
 
-    if (check.size() == 1 && IS_PLAYER_GUID(check.front())) // Player joining dungeon... compatible
+    if (check.size() == 1 && ((uint32)((uint64(check.front()) >> 48) & 0x0000FFFF) == HIGHGUID_PLAYER) && check.front() != 0) // Player joining dungeon... compatible
         return true;
 
     // Previously cached?

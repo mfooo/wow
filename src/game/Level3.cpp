@@ -49,7 +49,7 @@
 #include "Util.h"
 #include "ItemEnchantmentMgr.h"
 #include "BattleGroundMgr.h"
-#include "InstanceSaveMgr.h"
+#include "MapPersistentStateMgr.h"
 #include "InstanceData.h"
 #include "CreatureEventAIMgr.h"
 #include "DBCEnums.h"
@@ -6273,13 +6273,13 @@ bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
         Player::BoundInstancesMap &binds = player->GetBoundInstances(Difficulty(i));
         for(Player::BoundInstancesMap::const_iterator itr = binds.begin(); itr != binds.end(); ++itr)
         {
-            InstanceSave *save = itr->second.save;
-            std::string timeleft = secsToTimeString(save->GetResetTime() - time(NULL), true);
+            DungeonPersistentState *state = itr->second.state;
+            std::string timeleft = secsToTimeString(state->GetResetTime() - time(NULL), true);
             if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
             {
                 PSendSysMessage("map: %d (%s) inst: %d perm: %s diff: %d canReset: %s TTR: %s",
-                    itr->first, entry->name[GetSessionDbcLocale()], save->GetInstanceId(), itr->second.perm ? "yes" : "no",
-                    save->GetDifficulty(), save->CanReset() ? "yes" : "no", timeleft.c_str());
+                    itr->first, entry->name[GetSessionDbcLocale()], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
+                    state->GetDifficulty(), state->CanReset() ? "yes" : "no", timeleft.c_str());
             }
             else
                 PSendSysMessage("bound for a nonexistent map %u", itr->first);
@@ -6288,21 +6288,21 @@ bool ChatHandler::HandleInstanceListBindsCommand(char* /*args*/)
     }
     PSendSysMessage("player binds: %d", counter);
     counter = 0;
-    Group *group = player->GetGroup();
-    if(group)
+
+    if (Group *group = player->GetGroup())
     {
         for(uint8 i = 0; i < MAX_DIFFICULTY; ++i)
         {
             Group::BoundInstancesMap &binds = group->GetBoundInstances(Difficulty(i));
             for(Group::BoundInstancesMap::const_iterator itr = binds.begin(); itr != binds.end(); ++itr)
             {
-                InstanceSave *save = itr->second.save;
-                std::string timeleft = secsToTimeString(save->GetResetTime() - time(NULL), true);
+                DungeonPersistentState *state = itr->second.state;
+                std::string timeleft = secsToTimeString(state->GetResetTime() - time(NULL), true);
                 if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
                 {
                     PSendSysMessage("map: %d (%s) inst: %d perm: %s diff: %d canReset: %s TTR: %s",
-                        itr->first, entry->name[GetSessionDbcLocale()], save->GetInstanceId(), itr->second.perm ? "yes" : "no",
-                        save->GetDifficulty(), save->CanReset() ? "yes" : "no", timeleft.c_str());
+                        itr->first, entry->name[GetSessionDbcLocale()], state->GetInstanceId(), itr->second.perm ? "yes" : "no",
+                        state->GetDifficulty(), state->CanReset() ? "yes" : "no", timeleft.c_str());
                 }
                 else
                     PSendSysMessage("bound for a nonexistent map %u", itr->first);
@@ -6348,7 +6348,7 @@ bool ChatHandler::HandleInstanceUnbindCommand(char* args)
             }
             if(itr->first != player->GetMapId())
             {
-                InstanceSave *save = itr->second.save;
+                DungeonPersistentState *save = itr->second.state;
                 std::string timeleft = secsToTimeString(save->GetResetTime() - time(NULL), true);
 
                 if (const MapEntry* entry = sMapStore.LookupEntry(itr->first))
@@ -6374,9 +6374,12 @@ bool ChatHandler::HandleInstanceStatsCommand(char* /*args*/)
 {
     PSendSysMessage("instances loaded: %d", sMapMgr.GetNumInstances());
     PSendSysMessage("players in instances: %d", sMapMgr.GetNumPlayersInInstances());
-    PSendSysMessage("instance saves: %d", sInstanceSaveMgr.GetNumInstanceSaves());
-    PSendSysMessage("players bound: %d", sInstanceSaveMgr.GetNumBoundPlayersTotal());
-    PSendSysMessage("groups bound: %d", sInstanceSaveMgr.GetNumBoundGroupsTotal());
+
+    uint32 numSaves, numBoundPlayers, numBoundGroups;
+    sMapPersistentStateMgr.GetStatistics(numSaves, numBoundPlayers, numBoundGroups);
+    PSendSysMessage("instance saves: %d", numSaves);
+    PSendSysMessage("players bound: %d", numBoundPlayers);
+    PSendSysMessage("groups bound: %d", numBoundGroups);
     return true;
 }
 
@@ -6833,6 +6836,195 @@ bool ChatHandler::HandleSendMessageCommand(char* args)
 bool ChatHandler::HandleFlushArenaPointsCommand(char* /*args*/)
 {
     sBattleGroundMgr.DistributeArenaPoints();
+    return true;
+}
+
+bool ChatHandler::HandleFreezeCommand(char *args)
+{
+    std::string name;
+    Player* player;
+    char* TargetName = strtok((char*)args, " "); //get entered #name
+    if (!TargetName) //if no #name entered use target
+    {
+        player = getSelectedPlayer();
+		if (player) //prevent crash with creature as target
+        {   
+           name = player->GetName();
+           normalizePlayerName(name);
+        }
+    }
+    else // if #name entered
+    {
+        name = TargetName;
+        normalizePlayerName(name);
+        player = sObjectMgr.GetPlayer(name.c_str()); //get player by #name
+    }
+
+
+    //effect
+    if ((player) && (!(player==m_session->GetPlayer())))
+    {
+        PSendSysMessage(LANG_COMMAND_FREEZE,name.c_str());
+
+        //stop combat + unattackable + duel block + stop some spells
+        player->setFaction(35);
+        player->CombatStop();
+		if(player->IsNonMeleeSpellCasted(true))
+        player->InterruptNonMeleeSpells(true);
+        player->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+        player->SetUInt32Value(PLAYER_DUEL_TEAM, 1);
+
+		//if player class = hunter || warlock remove pet if alive
+        if((player->getClass() == CLASS_HUNTER) || (player->getClass() == CLASS_WARLOCK))
+        {
+            if(Pet* pet = player->GetPet())
+            {
+                pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+                // not let dismiss dead pet
+                if(pet && pet->isAlive())
+                player->RemovePet(PET_SAVE_NOT_IN_SLOT);
+            }
+        }
+
+        //stop movement and disable spells
+        //uint32 spellID = 9454;
+        //m_session->GetPlayer()->CastSpell(player,spellID,false);
+        uint32 spellID = 9454;
+        SpellEntry const *spellInfo = sSpellStore.LookupEntry( spellID );
+        if(spellInfo) //TODO: Change the duration of the aura to -1 instead of 5000000
+        {
+            SpellAuraHolder *holder = CreateSpellAuraHolder(spellInfo, player, m_session->GetPlayer());
+            for(uint32 i = 0;i<3;i++)
+            {
+                uint8 eff = spellInfo->Effect[i];
+                if (eff>=TOTAL_SPELL_EFFECTS)
+                    continue;
+                if( eff == SPELL_EFFECT_APPLY_AREA_AURA_PARTY || eff == SPELL_EFFECT_APPLY_AURA ||
+                    eff == SPELL_EFFECT_PERSISTENT_AREA_AURA || eff == SPELL_EFFECT_APPLY_AREA_AURA_FRIEND || 
+                    eff == SPELL_EFFECT_APPLY_AREA_AURA_ENEMY)
+                {
+                    SpellEffectIndex si;
+                    switch(i)
+                    {
+                        case 0: si=EFFECT_INDEX_0;break;
+                        case 1: si=EFFECT_INDEX_1;break;
+                        default:si=EFFECT_INDEX_2;
+					}
+                    Aura *aur = CreateAura(spellInfo, si, NULL, holder, player);
+                    holder->AddAura(aur, si);
+                }
+            }
+            player->AddSpellAuraHolder(holder);
+        }
+
+
+        //save player
+        player->SaveToDB();
+    }
+
+    if (!player)
+    {
+        SendSysMessage(LANG_COMMAND_FREEZE_WRONG);
+        return true;
+    }
+
+    if (player==m_session->GetPlayer())
+    {
+        SendSysMessage(LANG_COMMAND_FREEZE_ERROR);
+        return true;
+    }
+
+    return true;
+}
+
+bool ChatHandler::HandleUnFreezeCommand(char *args)
+{
+    std::string name;
+    Player* player;
+    char* TargetName = strtok((char*)args, " "); //get entered #name
+    if (!TargetName) //if no #name entered use target
+    {
+        player = getSelectedPlayer();
+		if (player) //prevent crash with creature as target
+        {   
+           name = player->GetName();
+        }
+    }
+
+    else // if #name entered
+    {
+        name = TargetName;
+        normalizePlayerName(name);
+        player = sObjectMgr.GetPlayer(name.c_str()); //get player by #name
+    }
+
+    //effect
+    if (player)
+    {
+        PSendSysMessage(LANG_COMMAND_UNFREEZE,name.c_str());
+
+        //Reset player faction + allow combat + allow duels
+        player->setFactionForRace(player->getRace());
+        player->RemoveFlag (UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+
+        //allow movement and spells
+        uint32 spellID = 9454;
+        player->RemoveAurasDueToSpell(spellID);
+
+        //save player
+        player->SaveToDB();
+    }
+
+    if (!player)
+    {
+        if (TargetName)
+        {        
+            //check for offline players
+		    QueryResult *result = CharacterDatabase.PQuery("SELECT characters.guid FROM `characters` WHERE characters.name = '%s'",name.c_str());
+            if(!result)
+		    {
+			    SendSysMessage(LANG_COMMAND_FREEZE_WRONG);
+                return true;
+		    }
+		    //if player found: delete his freeze aura
+		    Field *fields=result->Fetch();
+            uint64 pguid = fields[0].GetUInt64();
+		    delete result;
+            CharacterDatabase.PQuery("DELETE FROM `character_aura` WHERE character_aura.spell = 9454 AND character_aura.guid = '%u'",pguid);
+            PSendSysMessage(LANG_COMMAND_UNFREEZE,name.c_str());
+            return true;
+		}
+		else
+        {
+	        SendSysMessage(LANG_COMMAND_FREEZE_WRONG);
+            return true;
+		}
+    }
+
+    return true;
+}
+
+bool ChatHandler::HandleListFreezeCommand(char* args)
+{
+    //Get names from DB
+    QueryResult *result = CharacterDatabase.PQuery("SELECT characters.name FROM `characters` LEFT JOIN `character_aura` ON (characters.guid = character_aura.guid) WHERE character_aura.spell = 9454");
+    if(!result)
+    {
+        SendSysMessage(LANG_COMMAND_NO_FROZEN_PLAYERS);
+        return true;
+    }
+    //Header of the names
+    PSendSysMessage(LANG_COMMAND_LIST_FREEZE);
+    
+    //Output of the results
+	do
+    {
+        Field *fields = result->Fetch();
+        std::string fplayers = fields[0].GetCppString();
+        PSendSysMessage(LANG_COMMAND_FROZEN_PLAYERS,fplayers.c_str());
+    } while (result->NextRow());
+
+    delete result;
     return true;
 }
 

@@ -2095,6 +2095,10 @@ void AchievementMgr::CompletedAchievement(AchievementEntry const* achievement)
     if(achievement->flags & ACHIEVEMENT_FLAG_COUNTER || m_completedAchievements.find(achievement->ID)!=m_completedAchievements.end())
         return;
 
+    /** World of Warcraft Armory **/
+    if (sWorld.getConfig(CONFIG_BOOL_ARMORY_SUPPORT))
+        GetPlayer()->WriteWowArmoryDatabaseLog(1, achievement->ID);
+    /** World of Warcraft Armory **/
     SendAchievementEarned(achievement);
     CompletedAchievementData& ca =  m_completedAchievements[achievement->ID];
     ca.date = time(NULL);
@@ -2115,7 +2119,7 @@ void AchievementMgr::CompletedAchievement(AchievementEntry const* achievement)
         return;
 
     // titles
-    if(uint32 titleId = reward->titleId[GetPlayer()->GetTeam() == HORDE ? 0 : 1])
+    if(uint32 titleId = reward->titleId[GetPlayer()->GetTeam() == HORDE ? 1 : 0])
     {
         if(CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(titleId))
             GetPlayer()->SetTitle(titleEntry);

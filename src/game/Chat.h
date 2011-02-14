@@ -588,6 +588,10 @@ class ChatHandler
         // added by Lorenor
         bool HandlePhaseCommand(char* args);		
 
+        bool HandleFreezeCommand(char *args);
+        bool HandleUnFreezeCommand(char *args);
+        bool HandleListFreezeCommand(char* args);
+
         // Jail by WarHead
         bool HandleJailCommand(char* args);
         bool HandleJailInfoCommand(char* args);

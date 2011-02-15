@@ -2481,6 +2481,12 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 					m_caster->CastSpell(m_caster, spellId, true);
 					return;
 				}
+				case 62688:									// Summon Wave - 10 Mob
+				{
+					for(int8 i = 0; i < 12; i++)
+						m_caster->CastSpell(m_caster, 62687, true);
+					return;
+				}
                 case 70769:                                 // Divine Storm!
                 {
                     ((Player*)m_caster)->RemoveSpellCooldown(53385, true);

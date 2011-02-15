@@ -168,6 +168,7 @@ else()
   include(cmake/ImportACE.cmake)
 endif()
 
+<<<<<<< HEAD
 unset(TBB_INCLUDE_DIR CACHE)
 unset(TBB_LIBRARIES CACHE)
 unset(TBB_LIBRARIES_DIR CACHE)
@@ -183,6 +184,31 @@ if(TBB_USE_EXTERNAL)
   endif()
 else()
   include(cmake/ImportTBB.cmake)
+=======
+if(NOT USE_STD_MALLOC)
+  unset(TBB_INCLUDE_DIR CACHE)
+  unset(TBB_LIBRARIES CACHE)
+  unset(TBB_LIBRARIES_DIR CACHE)
+  unset(TBB_INCLUDE_DIR)
+  unset(TBB_LIBRARIES)
+  unset(TBB_LIBRARIES_DIR)
+  if(TBB_USE_EXTERNAL)
+    find_package(TBB)
+    if(NOT TBB_FOUND)
+      message(FATAL_ERROR
+        "This project requires TBB installed when TBB_USE_EXTERNAL is set. Please download the TBB Stable Release from http://www.threadingbuildingblocks.org/ and install it. If this script didn't find TBB and it was correctly installed please set TBB_ROOT to the correct path."
+      )
+    endif()
+  else()
+    include(cmake/ImportTBB.cmake)
+  endif()
+else()
+  set(TBB_USE_EXTERNAL 1)
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DUSE_STANDARD_MALLOC")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DUSE_STANDARD_MALLOC")
+  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DUSE_STANDARD_MALLOC")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DUSE_STANDARD_MALLOC")
+>>>>>>> 45213fbf98841add027e9073375315c694cff535
 endif()
 
 # Win32 delifered packages

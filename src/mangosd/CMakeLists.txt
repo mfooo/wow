@@ -16,7 +16,16 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
+<<<<<<< HEAD
 set(EXECUTABLE_NAME mangosd)
+=======
+if(NOT UNIX)
+  set(EXECUTABLE_NAME mangosd)
+else()
+  set(EXECUTABLE_NAME mangos-worldd)
+endif()
+
+>>>>>>> 45213fbf98841add027e9073375315c694cff535
 file(GLOB_RECURSE EXECUTABLE_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h)
 
 include_directories(

@@ -1452,15 +1452,9 @@ void World::SetInitialWorldSettings()
     sLog.outString("Calculate next monthly quest reset time..." );
     SetMonthlyQuestResetTime();
 
-<<<<<<< HEAD
     sLog.outString("Calculate random battleground reset time..." );
     InitRandomBGResetTime();
 
-    sLog.outString("Starting objects Pooling system..." );
-    sPoolMgr.Initialize();
-
-=======
->>>>>>> a8c6b4d7bed084ff15d1e1a0528060261a1b61de
     sLog.outString("Starting Game Event system..." );
     uint32 nextGameEvent = sGameEventMgr.Initialize();
     m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);    //depend on next event

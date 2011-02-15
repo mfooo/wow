@@ -824,13 +824,6 @@ inline ByteBuffer& operator>> (ByteBuffer& buf, MovementInfo& mi)
     return buf;
 }
 
-enum RelocationOperations
-{
-    AI_Notify_Sheduled          = 0x01,         // AI relocation notification sheduled
-    AI_Notify_Execution         = 0x02,         // AI relocation notification will be executed in next update tick
-    Visibility_Update_Execution = 0x04,         // Visibility will be updated in next update tick
-};
-
 enum DiminishingLevels
 {
     DIMINISHING_LEVEL_1             = 0,
@@ -2013,6 +2006,11 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         PetAuraSet m_petAuras;
         void AddPetAura(PetAura const* petSpell);
         void RemovePetAura(PetAura const* petSpell);
+		
+        void OnRelocated(bool forced);
+
+        bool IsAINotifySheduled() const { return m_AINotifySheduled;}
+        void SetAINotifySheduled(bool on) { m_AINotifySheduled = on;}
 
         // Frozen Mod
         inline void SetSpoofSamePlayerFaction(bool b) { m_spoofSamePlayerFaction = b; }
@@ -2029,16 +2027,6 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
 
         // Movement info
         MovementInfo m_movementInfo;
-		
-        void SheduleAINotify(uint32 delay);
-        void SheduleVisibilityUpdate();
-
-        uint8 m_notify_sheduled;
-        bool isNotifySheduled(uint8 f) const { return m_notify_sheduled & f;}
-        struct 
-        {
-            float x, y, z;
-        } m_last_notified_position;
 
         // Transports
         Transport* GetTransport() const { return m_transport; }
@@ -2135,6 +2123,8 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 m_castCounter;                               // count casts chain of triggered spells for prevent infinity cast crashes
 
         UnitVisibility m_Visibility;
+        Position m_last_visbility_updated_position;
+        bool m_AINotifySheduled;
 
         Diminishing m_Diminishing;
         // Manage all Units threatening us

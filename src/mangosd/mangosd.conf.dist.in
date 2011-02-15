@@ -1311,7 +1311,7 @@ GM.AllowAchievementGain  = 1
 #
 #    Visibility.RelocationLowerLimit
 #        Object's visibility update called, when distance between current object's position and position,
-#        where visiblity was updated last time, reaches RelocationLowerLimit value
+#        where visiblity was updated last time, reaches RelocationLoverLimit value
 #        Default: 10 (yards)
 #
 #    Visibility.AIRelocationNotifyDelay
@@ -1326,8 +1326,8 @@ Visibility.Distance.Instances     = 120
 Visibility.Distance.BGArenas      = 180
 Visibility.Distance.Object        = 100
 Visibility.Distance.InFlight      = 100
-Visibility.Distance.Grey.Unit    = 1
-Visibility.Distance.Grey.Object  = 10
+Visibility.Distance.Grey.Unit     = 1
+Visibility.Distance.Grey.Object   = 10
 
 Visibility.RelocationLowerLimit    = 10
 Visibility.AIRelocationNotifyDelay = 1000

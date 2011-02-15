@@ -105,8 +105,6 @@ void Camera::Event_AddedToWorld()
     GridType* grid = m_source->GetViewPoint().m_grid;
     MANGOS_ASSERT(grid);
     grid->AddWorldObject(this);
-
-    UpdateVisibilityForOwner();
 }
 
 void Camera::Event_RemovedFromWorld()

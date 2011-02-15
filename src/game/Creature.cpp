@@ -2379,13 +2379,6 @@ void Creature::SendAreaSpiritHealerQueryOpcode(Player *pl)
     pl->SendDirectMessage(&data);
 }
 
-void Creature::RelocationNotify()
-{
-    MaNGOS::CreatureRelocationNotifier relocationNotifier(*this);
-    float radius = MAX_CREATURE_ATTACK_RADIUS * sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO);
-    Cell::VisitAllObjects(this, relocationNotifier, radius);
-}
-
 void Creature::ApplyGameEventSpells(GameEventCreatureData const* eventData, bool activated)
 {
     uint32 cast_spell = activated ? eventData->spell_id_start : eventData->spell_id_end;

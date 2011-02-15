@@ -115,7 +115,9 @@ inline void CreatureUnitRelocationWorker(Creature* c, Unit* u)
     }
 }
 
-namespace MaNGOS{
+namespace MaNGOS
+{
+}
 
 template<> void AI_RelocationNotifier<Player>::Visit(CreatureMapType &m)
 {

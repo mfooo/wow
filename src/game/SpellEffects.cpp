@@ -2418,6 +2418,22 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->SetFacingTo(frand(0, M_PI_F*2), true);
                     return;
                 }
+				case 62653:									// Tidal Wave - nonheroic version
+				{
+					if(!unitTarget)
+						return;
+
+					m_caster->CastSpell(unitTarget, 62654, true);
+					return;
+				}
+				case 62935:									// Tidal Wave - heroic version
+				{
+					if(!unitTarget)
+						return;
+
+					m_caster->CastSpell(unitTarget, 62936, true);
+					return;
+				}
                 case 67019:                                 // Flask of the North
                 {
                     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -2453,6 +2469,40 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(m_caster, spell_id, true);
                     return;
                 }
+				case 62678:									// Summon Allies of Nature
+				{
+					uint32 spellId = 0;
+					switch(urand(0,2))
+					{
+						case 0: spellId = 62688; break;
+						case 1: spellId = 62686; break;
+						case 2: spellId = 62685; break;
+					}
+					m_caster->CastSpell(m_caster, spellId, true);
+					return;
+				}
+				case 62688:									// Summon Wave - 10 Mob
+				{
+					for(int8 i = 0; i < 12; i++)
+						m_caster->CastSpell(m_caster, 62687, true);
+					return;
+				}
+				case 62217:
+				case 62922:									// Unstable Energy - Unstable Sun Beam remove part
+				{
+					if(m_caster)
+						m_caster->RemoveAurasDueToSpell(m_spellInfo->EffectBasePoints[eff_idx] + 1);
+					return;
+				}
+				case 62262:									// Brightleaf Flux
+				{
+					if(!unitTarget)
+						return;
+
+					uint32 spellId = urand(0,1) ? 62251 : 62252;
+					m_caster->CastSpell(unitTarget, spellId, true);
+					return;
+				}
                 case 70769:                                 // Divine Storm!
                 {
                     ((Player*)m_caster)->RemoveSpellCooldown(53385, true);

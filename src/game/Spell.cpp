@@ -1676,12 +1676,12 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     break;
 				case 62240:                                 // Solar Flare
 				case 62920:                                 // Solar Flare (h)
-					{
-						if(Aura *pAura = m_caster->GetAura(62251, EFFECT_INDEX_0))
-							unMaxTargets = pAura->GetStackAmount();
-						else unMaxTargets = 1;
-						break;
-					}
+				{
+					if(Aura *pAura = m_caster->GetAura(62251, EFFECT_INDEX_0))
+						unMaxTargets = pAura->GetStackAmount();
+					else unMaxTargets = 1;
+					break;
+				}
                 case 69075:                                 // Bone Storm
                 case 70834:                                 // Bone Storm
                 case 70835:                                 // Bone Storm

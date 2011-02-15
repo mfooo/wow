@@ -2469,6 +2469,18 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(m_caster, spell_id, true);
                     return;
                 }
+				case 62678:									// Summon Allies of Nature
+				{
+					uint32 spellId = 0;
+					switch(urand(0,2))
+					{
+						case 0: spellId = 62688; break;
+						case 1: spellId = 62686; break;
+						case 2: spellId = 62685; break;
+					}
+					m_caster->CastSpell(m_caster, spellId, true);
+					return;
+				}
                 case 70769:                                 // Divine Storm!
                 {
                     ((Player*)m_caster)->RemoveSpellCooldown(53385, true);

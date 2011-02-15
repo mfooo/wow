@@ -2494,6 +2494,15 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 						m_caster->RemoveAurasDueToSpell(m_spellInfo->EffectBasePoints[eff_idx] + 1);
 					return;
 				}
+				case 62262:									// Brightleaf Flux
+				{
+					if(!unitTarget)
+						return;
+
+					uint32 spellId = urand(0,1) ? 62251 : 62252;
+					m_caster->CastSpell(unitTarget, spellId, true);
+					return;
+				}
                 case 70769:                                 // Divine Storm!
                 {
                     ((Player*)m_caster)->RemoveSpellCooldown(53385, true);

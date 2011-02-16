@@ -2418,22 +2418,42 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->SetFacingTo(frand(0, M_PI_F*2), true);
                     return;
                 }
-				case 62653:									// Tidal Wave - nonheroic version
-				{
-					if(!unitTarget)
-						return;
+                case 62653:                              // Tidal Wave - nonheroic version
+                {
+                    if(!unitTarget)
+                        return;
 
-					m_caster->CastSpell(unitTarget, 62654, true);
-					return;
-				}
-				case 62935:									// Tidal Wave - heroic version
-				{
-					if(!unitTarget)
-						return;
+                    m_caster->CastSpell(unitTarget, 62654, true);
+                    return;
+                }
+                case 62935:                                     // Tidal Wave - heroic version
+                {
+                     if(!unitTarget)
+                         return;
 
-					m_caster->CastSpell(unitTarget, 62936, true);
-					return;
-				}
+                    m_caster->CastSpell(unitTarget, 62936, true);
+                    return;
+                }
+                case 66390:                                 // Read Last Rites
+                {
+                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT || m_caster->GetTypeId() != TYPEID_PLAYER)
+                        return;
+
+                    // Summon Tualiq Proxy
+                    // Not known what purpose this has
+                    unitTarget->CastSpell(unitTarget, 66411, true);
+
+                    // Summon Tualiq Spirit
+                    // Offtopic note: the summoned has aura from spell 37119 and 66419. One of them should
+                    // most likely make summoned "rise", hover up/sideways in the air (MOVEFLAG_LEVITATING + MOVEFLAG_HOVER)
+                    unitTarget->CastSpell(unitTarget, 66412, true);
+
+                    ((Player*)m_caster)->KilledMonsterCredit(unitTarget->GetEntry(), unitTarget->GetObjectGuid());
+
+                    // Must have a delay for proper spell animation
+                    ((Creature*)unitTarget)->ForcedDespawn(1000);
+                    return;
+                }
                 case 67019:                                 // Flask of the North
                 {
                     if (m_caster->GetTypeId() != TYPEID_PLAYER)

@@ -36,7 +36,7 @@ additional details.])
 
 dnl Require GNU Autoconf 2.58 or better.  Previous versions did not
 dnl correctly support HP-UX.
-AC_PREREQ(2.65)
+AC_PREREQ(2.61)
 
 dnl Autoconf explicitly forbids patterns containing "_AC_".  This causes
 dnl a problem when using MPC to generate the Automake ".am" files since
@@ -164,9 +164,9 @@ dnl       -- Ossama
 dnl AC_PROG_INSTALL
 
 dnl Special handling for some UNIX variants and Cygwin32
-dnl AC_USE_SYSTEM_EXTENSIONS
+dnl AC_AIX
 
-dnl AC_USE_SYSTEM_EXTENSIONS
+dnl AC_MINIX
 
 case $host_os in
   *cygwin* ) CYGWIN=yes;;
@@ -7199,6 +7199,12 @@ dnl AC_SUBST(LIBOBJS)
 dnl Force CXXFLAGS to be substituted in Makefiles that don't "need" them.
 AC_SUBST([CXXFLAGS])
 
+dnl Precompute the absolute pathname of the ACE tests directory so
+dnl that we can avoid using GNU Make extensions in the ACE tests
+dnl Makefile.
+ACE_TESTS_DIR=`pwd`/tests
+AC_SUBST([ACE_TESTS_DIR])
+
 dnl
 dnl SECTION 16: AC_CONFIG_FILES([FILE...])
 dnl
@@ -7213,12 +7219,6 @@ dnl   ace/Makefile
 AC_CONFIG_FILES([
   Makefile
   ace/Makefile
-  ace/ETCL/Makefile
-  ace/Monitor_Control/Makefile
-  ace/QoS/Makefile
-  ace/SSL/Makefile
-  bin/Makefile
-  bin/PerlACE/Makefile
 ])
 
 dnl Note that the "ACE_VERSION" in the message below is an M4 macro

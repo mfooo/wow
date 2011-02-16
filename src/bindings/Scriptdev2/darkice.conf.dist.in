@@ -1,0 +1,139 @@
+################################################################################################
+# Project Dark-iCE Configuration file
+# This file must be placed within the directory which holds mangosd.conf and realmd.conf
+# or the scripts will not work as they should.
+################################################################################################
+
+[darkiceConf]
+ConfVersion=2010062001
+
+################################################################################################
+# Info:
+#       1 or 0 near the configuration defines if its enabled or disabled, example:
+#       1 is true while 0 is false, so if you want to enable BuffMaster, use 1, to disable
+#       use 0.
+################################################################################################
+################################################################################################
+# Buffs Master
+#	          .BuffCost = 5000 (50 Silver) 	# Define how much one buff should cost.
+#	          									Should not exceed maximum amount of gold witch
+#	          									is 2147483648 (214,748Gold 36Silver and 48Cooper)
+#	          .SmallBuffsEnabled = 1      	# Define if Small Buffs are enabled or disabled.
+#	          									Small buffs are very weak and on short duration
+#	          .GreatBuffsEnabled = 1	   	# Define if Great Buffs are enabled or disabled.
+#	          									Great buffs have much more power than the small
+#	          									ones, this should be disabled by default.
+#	          .GameMasterBuffsEnabled = 0 	# Define if GameMaster Buffs are enabled or disabled.
+#	          									GameMaster Buffs, testing spells witch you cannot
+#	          									aquire on the normal Blizzlike servers.
+#	          									Disabled by default. 
+#	          .PlayerToolsEnabled = 1		# Define if Player Tools are enabled or disabled.
+#	          									Player tools consists of numerous additions, like
+#	          									innkeeper and talent reset options.
+#	          .GoldSpellEnabled = 0			# Define if Gold Spell is enabled or disabled.
+#	          									Once used, the player will gain 5000 Gold.
+#	          									Disabled by default.
+################################################################################################
+BuffsMaster.BuffCost = 5000 (50 Silver)
+BuffsMaster.SmallBuffsEnabled = 1
+BuffsMaster.GreatBuffsEnabled = 1
+BuffsMaster.GameMasterBuffsEnabled = 0
+BuffsMaster.PlayerToolsEnabled = 1
+BuffsMaster.GoldSpellEnabled = 0
+
+################################################################################################
+# Token Vendor
+#	          .MaxLevel = 80				# Define the maximum level of wtich Token Vendor should
+#												exchange the BOJ for Levels.
+################################################################################################
+TokenVendor.MaxLevel = 80
+
+################################################################################################
+# Spell Master
+#	          .MinimumLevel = 10			# Define at witch level should the spell master
+#												teach the players.
+#################################################################################################
+SpellMaster.MinimumLevel = 10
+
+################################################################################################
+# Profession Master
+#	          .SkillPointCost = 5000		# Define how much skill advancement should cost.
+#	          									Should not exceed maximum amount of gold witch
+#	          									is 2147483648 (214,748Gold 36Silver and 48Cooper)
+#	          .ProfessionsEnabled = 1      	# Define if Main Profession advancement is enabled 
+#												or disabled.
+#	          .SecondarySkillsEnabled = 1	# Define if Secondary Profession advancement is
+#												enabled or disabled.
+#	          .AddSkillPoints = 0 			# Define how much skill points should the NPC add
+#	          									to the player who uses it.
+#	          									Should not exceed maximum  amount witch is 450. 
+################################################################################################
+ProfessionMaster.SkillPointCost = 5000 (50 Silver)
+ProfessionMaster.ProfessionsEnabled = 1
+ProfessionMaster.SecondarySkillsEnabled = 1
+ProfessionMaster.AddSkillPoints = 1
+
+################################################################################################
+# Reset NPC
+#	          .ResetAddMoney = 10000000		# Define how much should the reset NPC award the
+#												player if he resets his level.
+#	          .ResetMinimumLevel = 80		# Define the level of witch the player should be
+#	          									reset. 80 is the default.
+#	          .LevelAfterReset = 10			# Define the level of witch the player will be after
+#	          									the reset. 10 is the default.
+################################################################################################
+ResetMaster.ResetAddMoney = 10000000 (1000 Gold)
+ResetMaster.ResetMinimumLevel = 80
+ResetMaster.LevelAfterReset = 10
+
+################################################################################################
+# Item Configurations
+#	          .Item_SummonBankerEntryID		# Define the entry ID (found in the creature_template)
+#												that the item will use to summon Banker.
+#												Note: You may use what ever value you want, but
+#												if you'll use non-existent one, server might crash
+#			  .Item_SummonTeleportMasterEntryID # Same as above, only for Teleport Master.
+#
+#			  .Item_TalentPointStoneAddTalents  # Define how much should the Talent Item award the
+#													player witch uses it.
+#			  .Item_CooldownRemoverInfinite		# Define if the Cooldown remover should be infinte
+#													(not destroyable) or should end after one time
+#													usage.
+################################################################################################
+Item_SummonBankerEntryID = 29530
+Item_SummonTeleportMasterEntryID = 90000
+Item_TalentPointStoneAddTalents = 5
+Item_CooldownRemoverInfinte = 1
+
+################################################################################################
+# Level Up Item
+#	          .LevelUpItemSafeLevel = Safe level, do not change it to maintain harmony.
+#	          .LevelUpItemAddLevel  = The amount of levels that the item should grant.
+# 
+# Depending on your max allowed level, you might change them to what ever you want, but keep in
+# mind that if you'll add more levels, it might level the player for more than the allowed max
+# level. The formula is:
+#							SafeLevel + AddLevel = MaxLevel.
+#							         (75 + 5 = 80)
+################################################################################################
+LevelUpItemSafeLevel = 75
+LevelUpItemAddLevel = 5
+
+################################################################################################
+# Spellmaster
+#	          .LearnAllLanguages = 1        # Define if learning all languages is enabled or not.
+#
+#	          .MaxOutLanguageSkills = 1     # Define if maxing out languages is enabled or not.
+#
+#	          .LearnAllWeapons = 1          # Define if learning all weapons is enabled or not.
+#
+#	          .MaxOutWeaponSkills = 1       # Define if maxing out weapon skills is enabled or not.
+#
+#	          .MaxOutRidingSkills = 1       # Define if learning Artisian and Cold Weather flying
+#                                               is enabled or not. (Automatically max out riding)
+################################################################################################
+Spellmaster.LearnAllLanguages = 1
+Spellmaster.MaxOutLanguageSkills = 1
+Spellmaster.LearnAllWeapons = 1
+Spellmaster.MaxOutWeaponSkills = 1
+Spellmaster.MaxOutRidingSkills = 1

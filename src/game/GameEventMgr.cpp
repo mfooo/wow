@@ -593,15 +593,6 @@ uint32 GameEventMgr::Initialize()                           // return the next e
     return delay;
 }
 
-void GameEventMgr::Initialize( MapPersistentState* state )
-{
-    // At map persistent state creating need only apply pool spawn modifications
-    // other data is global and will be auto-apply
-    for(GameEventMgr::ActiveEvents::const_iterator event_itr = m_ActiveEvents.begin(); event_itr != m_ActiveEvents.end(); ++event_itr)
-        for (IdList::iterator pool_itr = mGameEventSpawnPoolIds[*event_itr].begin(); pool_itr != mGameEventSpawnPoolIds[*event_itr].end(); ++pool_itr)
-            sPoolMgr.InitSpawnPool(*state, *pool_itr);
-}
-
 // return the next event delay in ms
 uint32 GameEventMgr::Update(ActiveEvents const* activeAtShutdown /*= NULL*/)
 {
@@ -712,7 +703,7 @@ void GameEventMgr::GameEventSpawn(int16 event_id)
                 {
                     // will have chance at next pool update
                     sPoolMgr.SetExcludeObject<Creature>(pool_id, *itr, false);
-                    sPoolMgr.UpdatePoolInMaps<Creature>(pool_id);
+                    sPoolMgr.UpdatePool<Creature>(pool_id);
                     continue;
                 }
             }
@@ -742,7 +733,7 @@ void GameEventMgr::GameEventSpawn(int16 event_id)
                 {
                     // will have chance at next pool update
                     sPoolMgr.SetExcludeObject<GameObject>(pool_id, *itr, false);
-                    sPoolMgr.UpdatePoolInMaps<GameObject>(pool_id);
+                    sPoolMgr.UpdatePool<GameObject>(pool_id);
                     continue;
                 }
             }
@@ -762,7 +753,7 @@ void GameEventMgr::GameEventSpawn(int16 event_id)
         }
 
         for (IdList::iterator itr = mGameEventSpawnPoolIds[event_id].begin();itr != mGameEventSpawnPoolIds[event_id].end();++itr)
-            sPoolMgr.SpawnPoolInMaps(*itr, true);
+            sPoolMgr.SpawnPool(*itr, true);
     }
 }
 
@@ -787,7 +778,7 @@ void GameEventMgr::GameEventUnspawn(int16 event_id)
                 if (uint16 poolid = sPoolMgr.IsPartOfAPool<Creature>(*itr))
                 {
                     sPoolMgr.SetExcludeObject<Creature>(poolid, *itr, true);
-                    sPoolMgr.UpdatePoolInMaps<Creature>(poolid, *itr);
+                    sPoolMgr.UpdatePool<Creature>(poolid, *itr);
                     continue;
                 }
             }
@@ -817,7 +808,7 @@ void GameEventMgr::GameEventUnspawn(int16 event_id)
                 if (uint16 poolid = sPoolMgr.IsPartOfAPool<GameObject>(*itr))
                 {
                     sPoolMgr.SetExcludeObject<GameObject>(poolid, *itr, true);
-                    sPoolMgr.UpdatePoolInMaps<GameObject>(poolid, *itr);
+                    sPoolMgr.UpdatePool<GameObject>(poolid, *itr);
                     continue;
                 }
             }
@@ -840,7 +831,7 @@ void GameEventMgr::GameEventUnspawn(int16 event_id)
 
         for (IdList::iterator itr = mGameEventSpawnPoolIds[event_id].begin();itr != mGameEventSpawnPoolIds[event_id].end();++itr)
         {
-            sPoolMgr.DespawnPoolInMaps(*itr);
+            sPoolMgr.DespawnPool(*itr);
         }
     }
 }

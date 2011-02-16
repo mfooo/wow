@@ -56,6 +56,7 @@ GameObject::GameObject() : WorldObject()
     m_cooldownTime = 0;
     m_goInfo = NULL;
 
+    m_DBTableGuid = 0;
     m_rotation = 0;
 
     m_health = 0;
@@ -448,8 +449,8 @@ void GameObject::Update(uint32 update_diff, uint32 /*p_time*/)
                 SaveRespawnTime();
 
             // if part of pool, let pool system schedule new spawn instead of just scheduling respawn
-            if (uint16 poolid = sPoolMgr.IsPartOfAPool<GameObject>(GetGUIDLow()))
-                sPoolMgr.UpdatePool<GameObject>(*GetMap()->GetPersistentState(), poolid, GetGUIDLow());
+            if (uint16 poolid = GetDBTableGUIDLow() ? sPoolMgr.IsPartOfAPool<GameObject>(GetDBTableGUIDLow()) : 0)
+                sPoolMgr.UpdatePool<GameObject>(poolid, GetDBTableGUIDLow());
 
             // can be not in world at pool despawn
             if (IsInWorld())
@@ -488,8 +489,9 @@ void GameObject::Delete()
     SetGoState(GO_STATE_READY);
     SetUInt32Value(GAMEOBJECT_FLAGS, GetGOInfo()->flags);
 
-    if (uint16 poolid = sPoolMgr.IsPartOfAPool<GameObject>(GetGUIDLow()))
-        sPoolMgr.UpdatePool<GameObject>(*GetMap()->GetPersistentState(), poolid, GetGUIDLow());
+    uint16 poolid = GetDBTableGUIDLow() ? sPoolMgr.IsPartOfAPool<GameObject>(GetDBTableGUIDLow()) : 0;
+    if (poolid)
+        sPoolMgr.UpdatePool<GameObject>(poolid, GetDBTableGUIDLow());
     else
         AddObjectToRemoveList();
 }
@@ -511,7 +513,7 @@ void GameObject::SaveToDB()
 {
     // this should only be used when the gameobject has already been loaded
     // preferably after adding to map, because mapid may not be valid otherwise
-    GameObjectData const *data = sObjectMgr.GetGOData(GetGUIDLow());
+    GameObjectData const *data = sObjectMgr.GetGOData(m_DBTableGuid);
     if(!data)
     {
         sLog.outError("GameObject::SaveToDB failed, cannot get gameobject data!");
@@ -528,8 +530,10 @@ void GameObject::SaveToDB(uint32 mapid, uint8 spawnMask, uint32 phaseMask)
     if (!goI)
         return;
 
+    if (!m_DBTableGuid)
+        m_DBTableGuid = GetGUIDLow();
     // update in loaded data (changing data only in this place)
-    GameObjectData& data = sObjectMgr.NewGOData(GetGUIDLow());
+    GameObjectData& data = sObjectMgr.NewGOData(m_DBTableGuid);
 
     // data->guid = guid don't must be update at save
     data.id = GetEntry();
@@ -551,7 +555,7 @@ void GameObject::SaveToDB(uint32 mapid, uint8 spawnMask, uint32 phaseMask)
     // updated in DB
     std::ostringstream ss;
     ss << "INSERT INTO gameobject VALUES ( "
-        << GetGUIDLow() << ", "
+        << m_DBTableGuid << ", "
         << GetEntry() << ", "
         << mapid << ", "
         << uint32(spawnMask) << ","                         // cast to prevent save as symbol
@@ -569,7 +573,7 @@ void GameObject::SaveToDB(uint32 mapid, uint8 spawnMask, uint32 phaseMask)
         << uint32(GetGoState()) << ")";
 
     WorldDatabase.BeginTransaction();
-    WorldDatabase.PExecuteLog("DELETE FROM gameobject WHERE guid = '%u'", GetGUIDLow());
+    WorldDatabase.PExecuteLog("DELETE FROM gameobject WHERE guid = '%u'", m_DBTableGuid);
     WorldDatabase.PExecuteLog("%s", ss.str().c_str());
     WorldDatabase.CommitTransaction();
 }
@@ -600,6 +604,8 @@ bool GameObject::LoadFromDB(uint32 guid, Map *map)
     uint8 animprogress = data->animprogress;
     GOState go_state = data->go_state;
 
+    m_DBTableGuid = guid;
+
     if (!Create(guid,entry, map, phaseMask, x, y, z, ang, rotation0, rotation1, rotation2, rotation3, animprogress, go_state) )
         return false;
 
@@ -617,13 +623,13 @@ bool GameObject::LoadFromDB(uint32 guid, Map *map)
             m_spawnedByDefault = true;
             m_respawnDelayTime = data->spawntimesecs;
 
-            m_respawnTime  = map->GetPersistentState()->GetGORespawnTime(GetGUIDLow());
+            m_respawnTime  = map->GetPersistentState()->GetGORespawnTime(m_DBTableGuid);
 
             // ready to respawn
             if (m_respawnTime && m_respawnTime <= time(NULL))
             {
                 m_respawnTime = 0;
-                map->GetPersistentState()->SaveGORespawnTime(GetGUIDLow(), 0);
+                map->GetPersistentState()->SaveGORespawnTime(m_DBTableGuid, 0);
             }
         }
         else
@@ -652,19 +658,19 @@ struct GameObjectRespawnDeleteWorker
 
 void GameObject::DeleteFromDB()
 {
-    if (!HasStaticDBSpawnData())
+    if (!m_DBTableGuid)
     {
         DEBUG_LOG("Trying to delete not saved gameobject!");
         return;
     }
 
-    GameObjectRespawnDeleteWorker worker(GetGUIDLow());
+    GameObjectRespawnDeleteWorker worker(m_DBTableGuid);
     sMapPersistentStateMgr.DoForAllStatesWithMapId(GetMapId(), worker);
 
-    sObjectMgr.DeleteGOData(GetGUIDLow());
-    WorldDatabase.PExecuteLog("DELETE FROM gameobject WHERE guid = '%u'", GetGUIDLow());
-    WorldDatabase.PExecuteLog("DELETE FROM game_event_gameobject WHERE guid = '%u'", GetGUIDLow());
-    WorldDatabase.PExecuteLog("DELETE FROM gameobject_battleground WHERE guid = '%u'", GetGUIDLow());
+    sObjectMgr.DeleteGOData(m_DBTableGuid);
+    WorldDatabase.PExecuteLog("DELETE FROM gameobject WHERE guid = '%u'", m_DBTableGuid);
+    WorldDatabase.PExecuteLog("DELETE FROM game_event_gameobject WHERE guid = '%u'", m_DBTableGuid);
+    WorldDatabase.PExecuteLog("DELETE FROM gameobject_battleground WHERE guid = '%u'", m_DBTableGuid);
 }
 
 GameObjectInfo const *GameObject::GetGOInfo() const
@@ -722,7 +728,7 @@ Unit* GameObject::GetOwner() const
 void GameObject::SaveRespawnTime()
 {
     if(m_respawnTime > time(NULL) && m_spawnedByDefault)
-        GetMap()->GetPersistentState()->SaveGORespawnTime(GetGUIDLow(), m_respawnTime);
+        GetMap()->GetPersistentState()->SaveGORespawnTime(m_DBTableGuid, m_respawnTime);
 }
 
 bool GameObject::isVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const
@@ -770,7 +776,7 @@ void GameObject::Respawn()
     if(m_spawnedByDefault && m_respawnTime > 0)
     {
         m_respawnTime = time(NULL);
-        GetMap()->GetPersistentState()->SaveGORespawnTime(GetGUIDLow(), 0);
+        GetMap()->GetPersistentState()->SaveGORespawnTime(m_DBTableGuid, 0);
     }
 }
 
@@ -993,7 +999,7 @@ void GameObject::Use(Unit* user)
             UseDoorOrButton();
 
             // activate script
-            GetMap()->ScriptsStart(sGameObjectScripts, GetGUIDLow(), spellCaster, this);
+            GetMap()->ScriptsStart(sGameObjectScripts, GetDBTableGUIDLow(), spellCaster, this);
             return;
         }
         case GAMEOBJECT_TYPE_BUTTON:                        // 1
@@ -1002,7 +1008,7 @@ void GameObject::Use(Unit* user)
             UseDoorOrButton();
 
             // activate script
-            GetMap()->ScriptsStart(sGameObjectScripts, GetGUIDLow(), spellCaster, this);
+            GetMap()->ScriptsStart(sGameObjectScripts, GetDBTableGUIDLow(), spellCaster, this);
 
             TriggerLinkedGameObject(user);
             return;
@@ -1030,7 +1036,7 @@ void GameObject::Use(Unit* user)
             // TODO: possible must be moved to loot release (in different from linked triggering)
             if (GetGOInfo()->chest.eventId)
             {
-                DEBUG_LOG("Chest ScriptStart id %u for GO %u", GetGOInfo()->chest.eventId, GetGUIDLow());
+                DEBUG_LOG("Chest ScriptStart id %u for GO %u", GetGOInfo()->chest.eventId, GetDBTableGUIDLow());
 
                 if (!sScriptMgr.OnProcessEvent(GetGOInfo()->chest.eventId, user, this, true))
                     GetMap()->ScriptsStart(sEventScripts, GetGOInfo()->chest.eventId, user, this);
@@ -1151,7 +1157,7 @@ void GameObject::Use(Unit* user)
 
                 if (info->goober.eventId)
                 {
-                    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "Goober ScriptStart id %u for GO entry %u (GUID %u).", info->goober.eventId, GetEntry(), GetGUIDLow());
+                    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "Goober ScriptStart id %u for GO entry %u (GUID %u).", info->goober.eventId, GetEntry(), GetDBTableGUIDLow());
 
                     if (!sScriptMgr.OnProcessEvent(info->goober.eventId, player, this, true))
                         GetMap()->ScriptsStart(sEventScripts, info->goober.eventId, player, this);
@@ -1902,9 +1908,4 @@ void GameObject::SpawnInMaps(uint32 db_guid, GameObjectData const* data)
 {
     SpawnGameObjectInMapsWorker worker(db_guid, data);
     sMapMgr.DoForAllMapsWithMapId(data->mapid, worker);
-}
-
-bool GameObject::HasStaticDBSpawnData() const
-{
-    return sObjectMgr.GetGOData(GetGUIDLow()) != NULL;
 }

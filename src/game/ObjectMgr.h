@@ -32,7 +32,6 @@
 #include "NPCHandler.h"
 #include "Database/DatabaseEnv.h"
 #include "Map.h"
-#include "MapPersistentStateMgr.h"
 #include "ObjectAccessor.h"
 #include "ObjectGuid.h"
 #include "Policies/Singleton.h"
@@ -93,6 +92,7 @@ struct AreaTrigger
     float  target_Orientation;
 };
 
+typedef std::set<uint32> CellGuidSet;
 typedef std::map<uint32/*player guid*/,uint32/*instance*/> CellCorpseSet;
 struct CellObjectGuids
 {
@@ -897,6 +897,11 @@ class ObjectMgr
                 return NULL;
         }
 
+        CellObjectGuids const& GetCellObjectGuids(uint16 mapid, uint8 spawnMode, uint32 cell_id)
+        {
+            return mMapObjectGuids[MAKE_PAIR32(mapid,spawnMode)][cell_id];
+        }
+
         CreatureDataPair const* GetCreatureDataPair(uint32 guid) const
         {
             CreatureDataMap::const_iterator itr = mCreatureDataMap.find(guid);
@@ -1013,20 +1018,14 @@ class ObjectMgr
         int32 GetDBCLocaleIndex() const { return DBCLocaleIndex; }
         void SetDBCLocaleIndex(uint32 lang) { DBCLocaleIndex = GetIndexForLocale(LocaleConstant(lang)); }
 
-        // global grid objects state (static DB spawns, global spawn mods from gameevent system)
-        CellObjectGuids const& GetCellObjectGuids(uint16 mapid, uint8 spawnMode, uint32 cell_id)
-        {
-            return mMapObjectGuids[MAKE_PAIR32(mapid,spawnMode)][cell_id];
-        }
+        void AddCorpseCellData(uint32 mapid, uint32 cellid, uint32 player_guid, uint32 instance);
+        void DeleteCorpseCellData(uint32 mapid, uint32 cellid, uint32 player_guid);
 
-        // modifiers for global grid objects state (static DB spawns, global spawn mods from gameevent system)
-        // Don't must be used for modify instance specific spawn state modifications
+        // grid objects
         void AddCreatureToGrid(uint32 guid, CreatureData const* data);
         void RemoveCreatureFromGrid(uint32 guid, CreatureData const* data);
         void AddGameobjectToGrid(uint32 guid, GameObjectData const* data);
         void RemoveGameobjectFromGrid(uint32 guid, GameObjectData const* data);
-        void AddCorpseCellData(uint32 mapid, uint32 cellid, uint32 player_guid, uint32 instance);
-        void DeleteCorpseCellData(uint32 mapid, uint32 cellid, uint32 player_guid);
 
         // reserved names
         void LoadReservedPlayersNames();

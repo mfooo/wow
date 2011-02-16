@@ -1,0 +1,66 @@
+@package RSA scripts for ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+@version 0.3a
+@revision (current)
+@copyright (c) 2009-2010 /dev/rsa
+@license GNU Public License
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+In this repository you found this custom scripts:
+
+- many scripts from Insider42
+- Ulduar (from Xfurry, partially rewrite by me)
+- Trial of the Champion (by Syntec, big rewrite by me)
+- Violet hold (by ckegg, big rewrite by me)
+- Naxxramas (by ckegg)
+- Ahn'kahet (renewed, by Tassadar with my corrects)
+- Draktaron (by Tassadar)
+- Culling of Stratholme (by MaxXx2021 AKA Mioka)
+- Obsidian Sanctum (by MaxXx2021)
+- Azjol-Nerub (by MaxXx2021)
+- Forge of souls (by Maxxx2021 and me)
+- Halls of reflection (by Maxxx2021 and me)
+- Vault of Archavon (by Insider42)
+- Trial of the Crusader (by me)
+- Icecrown Citadel (by me)
+- Ruby Sanctum (by me, partially from notagain, alphatesting)
+- npc_arena_honor by tempura
+- NPC special (partially by me, thanks for all)
+- Eye of Acherus quest (need core support, from traponinet)
+
+Attention please! In my project only correct Linux Makefile provided. 
+If you want compile this branch on Windows, please convert Makefile to your c++ compiler.
+
+Thanks to:
+- Vladimir Mangos - MaNGOS project;
+- Insider42 - for your work;
+- MaxXx2021 aka Mioka - for your scripts;
+- Tassadar;
+- notagain - base placeholders and spell research for Ruby sanctum;
+- griffonheart (original texts/sounds for TOC);
+- Cristy (re-translation to english);
+- Selector - Faction champions base script, testing, bugreports;
+- Boxa - changes for Windows compilers and bugreports;
+- Wowka321 - core support;
+- Dron01, Lordronn - bugreports and valuable advice;
+- gladden, ghostart - bugreports;
+- Xfurry - Ulduar instance,
+- all - testing.
+
+Ladies and gentlemen, and friends! If you want to compile my scripts with a compiler different from the GNU C, then the config files, projects or whatever else you need to create your own! I do only Makefile. 
+And please do not send me a compilation error. So what lies in my repository, absolute accuracy compiles fine and works on live servers.
+
+Уважаемые дамы и господа, а также товарищи! Если Вы хотите скомпилировать мои скрипты с помощью компилятора, отличного от GNU C, то конфиг-файлы, проекты или что там еще Вам придется создавать самостоятельно! Я делаю только Makefile.
+И пожалуйста, не присылайте мне ошибки компиляции. То что лежит в моем репозитории, абсолютно точно компилируется нормально и работает на живых серверах.

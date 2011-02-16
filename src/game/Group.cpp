@@ -368,9 +368,9 @@ uint32 Group::RemoveMember(ObjectGuid guid, RemoveMethod method)
     BroadcastGroupUpdate();
     // Frozen Mod
 
-    /*if (isLfgQueued())
+    if (isLfgQueued())
         sLFGMgr.Leave(NULL, this);
-    else*/ if (isLFGGroup() && !isLfgDungeonComplete())
+    else if (isLFGGroup() && !isLfgDungeonComplete())
         sLFGMgr.OfferContinue(this);
 
     // remove member and change leader (if need) only if strong more 2 members _before_ member remove

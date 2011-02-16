@@ -47,8 +47,11 @@ inline void MaNGOS::ObjectUpdater::Visit(CreatureMapType &m)
     }
 }
 
-inline void PlayerCreatureRelocationWorker(Player* pl, Creature* c)
+inline void PlayerCreatureRelocationWorker(Player* pl, WorldObject const* viewPoint, Creature* c)
 {
+    // update creature visibility at player/creature move
+    pl->UpdateVisibilityOf(viewPoint,c);
+
     // Creature AI reaction
     if (!c->hasUnitState(UNIT_STAT_LOST_CONTROL))
     {
@@ -69,47 +72,6 @@ inline void CreatureCreatureRelocationWorker(Creature* c1, Creature* c2)
     {
         if (c2->AI() && c2->AI()->IsVisible(c1) && !c2->IsInEvadeMode())
             c2->AI()->MoveInLineOfSight(c1);
-    }
-}
-
-inline void MaNGOS::PlayerRelocationNotifier::Visit(CreatureMapType &m)
-{
-    if (!i_player.isAlive() || i_player.IsTaxiFlying())
-        return;
-
-    for(CreatureMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
-    {
-        Creature* c = iter->getSource();
-        if (c->isAlive() && !c->isNotifySheduled(AI_Notify_Execution))
-            PlayerCreatureRelocationWorker(&i_player, c);
-    }
-}
-
-template<>
-inline void MaNGOS::CreatureRelocationNotifier::Visit(PlayerMapType &m)
-{
-    if (!i_creature.isAlive())
-        return;
-
-    for(PlayerMapType::iterator iter=m.begin(); iter != m.end(); ++iter)
-    {
-        Player* player = iter->getSource();
-        if (player->isAlive() && !player->IsTaxiFlying() && !player->isNotifySheduled(AI_Notify_Execution))
-            PlayerCreatureRelocationWorker(player, &i_creature);
-    }
-}
-
-template<>
-inline void MaNGOS::CreatureRelocationNotifier::Visit(CreatureMapType &m)
-{
-    if (!i_creature.isAlive())
-        return;
-
-    for(CreatureMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
-    {
-        Creature* c = iter->getSource();
-        if (c != &i_creature && c->isAlive() && !c->isNotifySheduled(AI_Notify_Execution))
-            CreatureCreatureRelocationWorker(c, &i_creature);
     }
 }
 

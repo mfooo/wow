@@ -17,6 +17,7 @@
  */
 
 #include "GridNotifiers.h"
+#include "CellImpl.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 #include "UpdateData.h"
@@ -25,6 +26,7 @@
 #include "Transports.h"
 #include "ObjectAccessor.h"
 #include "BattleGroundMgr.h"
+#include "World.h"
 
 using namespace MaNGOS;
 
@@ -57,8 +59,6 @@ VisibleNotifier::Notify()
         }
     }
 
-    // generate outOfRange for not iterate objects
-    i_data.AddOutOfRangeGUID(i_clientGUIDs);
     for(ObjectGuidSet::iterator itr = i_clientGUIDs.begin();itr!=i_clientGUIDs.end();++itr)
     {
         player.m_clientGUIDs.erase(*itr);
@@ -67,6 +67,8 @@ VisibleNotifier::Notify()
             itr->GetString().c_str(), player.GetGuidStr().c_str());
     }
 
+    // generate outOfRange for not iterate objects
+    i_data.AddOutOfRangeGUID(i_clientGUIDs);
     if (i_data.HasData())
     {
         // send create/outofrange packet to player (except player create updates that already sent using SendUpdateToPlayer)
@@ -81,8 +83,8 @@ VisibleNotifier::Notify()
             if (!iter->IsPlayer())
                 continue;
 
-            if (Player* plr = ObjectAccessor::FindPlayer(*iter))
-                plr->UpdateVisibilityOf(plr->GetCamera().GetBody(), &player);
+            if (Player* plr = player.GetMap()->GetPlayer(*iter))
+                plr->GetCamera().UpdateVisibilityOf(&player);
         }
     }
 
@@ -99,6 +101,73 @@ VisibleNotifier::Notify()
         if ((*vItr)->GetTypeId()==TYPEID_UNIT && ((Creature*)(*vItr))->isAlive())
             ((Creature*)(*vItr))->SendMonsterMoveWithSpeedToCurrentDestination(&player);
     }
+}
+
+inline void CreatureUnitRelocationWorker(Creature* c, Unit* u)
+{
+    if(!c->isAlive() || !u->isAlive() || u->IsTaxiFlying())
+        return;
+
+    if(!c->hasUnitState(UNIT_STAT_FLEEING))
+    {
+        if( c->AI() && c->AI()->IsVisible(u) && !c->IsInEvadeMode() )
+            c->AI()->MoveInLineOfSight(u);
+    }
+}
+
+namespace MaNGOS
+{
+}
+
+template<> void AI_RelocationNotifier<Player>::Visit(CreatureMapType &m)
+{
+    for(CreatureMapType::iterator iter=m.begin(); iter != m.end(); ++iter)
+    {
+        CreatureUnitRelocationWorker(iter->getSource(), &i_unit);
+    }
+}
+
+template<> void AI_RelocationNotifier<Creature>::Visit(PlayerMapType &m)
+{
+    for(PlayerMapType::iterator iter=m.begin(); iter != m.end(); ++iter)
+    {
+        Player* p = iter->getSource();
+        if (!p->IsAINotifySheduled())   // handle passive object only
+            CreatureUnitRelocationWorker(&i_unit, p);
+    }
+}
+
+template<> void AI_RelocationNotifier<Creature>::Visit(CreatureMapType &m)
+{
+    for(CreatureMapType::iterator iter=m.begin(); iter != m.end(); ++iter)
+    {
+        Creature* c = iter->getSource();
+        CreatureUnitRelocationWorker(&i_unit, c);
+
+        if (!c->IsAINotifySheduled())   // handle passive object only
+            CreatureUnitRelocationWorker(c, &i_unit);
+    }
+}
+
+template<class U> inline void handleUnitRelocation(U & unit, const float& visDist, const float& aggroDist)
+{
+    if (unit.IsInWorld() && unit.IsAINotifySheduled())
+    {
+        AI_RelocationNotifier<U> notif(unit);
+        Cell::VisitAllObjects(&unit, notif, aggroDist);
+    }
+}
+
+void DelayedUnitRelocation::Visit(PlayerMapType &m)
+{
+    for(PlayerMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
+        handleUnitRelocation<Player>(*iter->getSource(), i_visibility_radius, i_aggroRadius);
+}
+
+void DelayedUnitRelocation::Visit(CreatureMapType &m)
+{
+    for(CreatureMapType::iterator iter = m.begin(); iter != m.end(); ++iter)
+        handleUnitRelocation<Creature>(*iter->getSource(), i_visibility_radius, i_aggroRadius);
 }
 
 void

@@ -221,11 +221,7 @@ Unit::Unit()
     m_AuraFlags = 0;
 
     m_Visibility = VISIBILITY_ON;
-	
-    m_notify_sheduled = 0;
-    m_last_notified_position.x = 0;
-    m_last_notified_position.y = 0;
-    m_last_notified_position.z = 0;
+    m_AINotifySheduled = false;
 
     m_detectInvisibilityMask = 0;
     m_invisibilityMask = 0;
@@ -8772,11 +8768,12 @@ void Unit::SetVisibility(UnitVisibility x)
             }
         }
 
-        GetViewPoint().Call_UpdateVisibilityForOwner();
         UpdateObjectVisibility();
-        SheduleAINotify(0);
+        GetViewPoint().Call_UpdateVisibilityForOwner();
 		
         GetViewPoint().Event_ViewPointVisibilityChanged();
+		
+        SetAINotifySheduled(true);
     }
 }
 
@@ -12117,94 +12114,6 @@ void Unit::RemoveUnitFromHostileRefManager(Unit* p_unit)
    getHostileRefManager().deleteReference(p_unit);
 }
 
-class RelocationNotifyEvent : public BasicEvent
-{
-    public:
-        RelocationNotifyEvent(Unit& owner) : BasicEvent(), m_owner(owner)
-        {
-            m_owner.m_notify_sheduled |= AI_Notify_Sheduled;
-        }
-
-        bool Execute(uint64 e_time, uint32 /*p_time*/)
-        {
-            float radius = MAX_CREATURE_ATTACK_RADIUS * sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO);
-
-            if (m_owner.m_notify_sheduled & AI_Notify_Execution)
-            {
-                if (m_owner.GetTypeId() == TYPEID_PLAYER)
-                {
-                    MaNGOS::PlayerRelocationNotifier notify((Player&)m_owner);
-                    Cell::VisitAllObjects(&m_owner,notify,radius);
-                } 
-                else //if(m_owner.GetTypeId() == TYPEID_UNIT)
-                {
-                    MaNGOS::CreatureRelocationNotifier notify((Creature&)m_owner);
-                    Cell::VisitAllObjects(&m_owner,notify,radius);
-                }
-
-                m_owner.m_notify_sheduled &= ~(AI_Notify_Sheduled | AI_Notify_Execution);
-                return true;
-            }
-            else
-            {
-                m_owner.m_notify_sheduled |= AI_Notify_Execution;
-                m_owner.m_Events.AddEvent(this, e_time + 1, false);
-                return false;
-            }
-        }
-
-        void Abort(uint64)
-        {
-            m_owner.m_notify_sheduled &= ~(AI_Notify_Sheduled | AI_Notify_Execution);
-        }
-
-    private:
-        Unit& m_owner;
-};
-
-class UpdateVisibilityEvent : public BasicEvent
-{
-    public:
-        UpdateVisibilityEvent(Unit& owner) : BasicEvent(), m_owner(owner)
-        {
-            m_owner.m_notify_sheduled |= Visibility_Update_Execution;
-        }
-
-        bool Execute(uint64, uint32)
-        {
-            m_owner.GetViewPoint().Call_UpdateVisibilityForOwner();
-            m_owner.UpdateObjectVisibility();
-            m_owner.m_notify_sheduled &= ~Visibility_Update_Execution;
-            return true;
-        }
-
-        void Abort(uint64)
-        {
-            m_owner.m_notify_sheduled &= ~Visibility_Update_Execution;
-        }
-
-    private:
-        Unit& m_owner;
-};
-
-void Unit::SheduleAINotify(uint32 delay)
-{
-    if (m_notify_sheduled & AI_Notify_Sheduled)
-        return;
-
-    RelocationNotifyEvent *notify = new RelocationNotifyEvent(*this);
-    m_Events.AddEvent(notify, m_Events.CalculateTime(delay));
-}
-
-void Unit::SheduleVisibilityUpdate()
-{
-    if (m_notify_sheduled & Visibility_Update_Execution)
-        return;
-
-    UpdateVisibilityEvent *notify = new UpdateVisibilityEvent(*this);
-    m_Events.AddEvent(notify, m_Events.CalculateTime(0));
-}
-
 void Unit::_AddAura(uint32 spellID, uint32 duration)
 {
     SpellEntry const *spellInfo = sSpellStore.LookupEntry( spellID );
@@ -12322,4 +12231,22 @@ bool Unit::IsAllowedDamageInArea(Unit* pVictim) const
         return false;
 
     return true;
+}
+
+void Unit::OnRelocated(bool forced)
+{
+    // switch to use G3D::Vector3 is good idea, maybe
+    float dx = m_last_visbility_updated_position.x - GetPositionX();
+    float dy = m_last_visbility_updated_position.y - GetPositionY();
+    float dz = m_last_visbility_updated_position.z - GetPositionZ();
+    float distsq = dx*dx+dy*dy+dz*dz;
+    if (distsq > World::GetRelocationLowerLimitSq() || forced)
+    {
+        m_last_visbility_updated_position.x = GetPositionX();
+        m_last_visbility_updated_position.y = GetPositionY();
+        m_last_visbility_updated_position.z = GetPositionZ();
+        UpdateObjectVisibility();
+        GetViewPoint().Call_UpdateVisibilityForOwner();
+    }
+    SetAINotifySheduled(true);
 }
